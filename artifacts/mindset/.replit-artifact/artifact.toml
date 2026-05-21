@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/"
+title = "Mindset"
+version = "1.0.0"
+id = "artifacts/mindset"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/" ]
+localPort = 24993
+
+[services.development]
+run = "pnpm --filter @workspace/mindset run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/mindset", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/mindset", "run", "serve" ]
+
+[services.env]
+PORT = "24993"
+BASE_PATH = "/"

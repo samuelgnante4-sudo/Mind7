@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "0dP_pL0IFyKinlCHecffg"
+uri = "file://artifacts/mindset/assets/images/icon.png"
+type = "image"
+title = "mindset app icon"
