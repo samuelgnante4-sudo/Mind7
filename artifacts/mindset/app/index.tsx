@@ -1,306 +1,205 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useRef } from "react";
-import {
-  Animated,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Animated, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useGame } from "@/context/GameContext";
+import { CATEGORY_COLORS, CATEGORY_LABELS, CHAPTERS, LEVELS } from "@/data/levels";
 import { useColors } from "@/hooks/useColors";
+
+const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+  sequence: "grid-outline",
+  quiz: "help-circle-outline",
+  memory: "copy-outline",
+  reflection: "eye-outline",
+  pattern: "analytics-outline",
+};
 
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { level, bestLevel, totalGamesPlayed } = useGame();
+  const { currentLevelId, completedLevels, totalScore, isLevelCompleted, isLevelUnlocked } = useGame();
 
-  const pulseAnim = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 800,
-      useNativeDriver: true,
-    }).start();
-
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.05,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
+    Animated.timing(fadeAnim, { toValue: 1, duration: 900, useNativeDriver: true }).start();
   }, []);
 
-  const topPadding =
-    Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const botPad = Platform.OS === "web" ? 34 : insets.bottom;
+
+  const completionPct = Math.round((completedLevels.length / LEVELS.length) * 100);
+  const currentLevel = LEVELS.find((l) => l.id === currentLevelId);
+  const currentChapter = CHAPTERS.find((c) => c.levels.includes(currentLevelId));
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: colors.background,
-          paddingTop: topPadding + 20,
-          paddingBottom: Platform.OS === "web" ? 34 : insets.bottom + 20,
-        },
-      ]}
+    <ScrollView
+      style={[styles.scroll, { backgroundColor: colors.background }]}
+      contentContainerStyle={[styles.content, { paddingTop: topPad + 24, paddingBottom: botPad + 24 }]}
+      showsVerticalScrollIndicator={false}
     >
-      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+      <Animated.View style={[styles.inner, { opacity: fadeAnim }]}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.brandName, { color: colors.primary }]}>
-            MINDSET
-          </Text>
-          <Text style={[styles.tagline, { color: colors.mutedForeground }]}>
-            Memory Training
-          </Text>
-        </View>
-
-        {/* Grid preview */}
-        <Animated.View
-          style={[styles.gridPreview, { transform: [{ scale: pulseAnim }] }]}
-        >
-          {[0, 1, 2, 3].map((i) => (
-            <View
-              key={i}
-              style={[
-                styles.previewButton,
-                {
-                  backgroundColor: colors.secondary,
-                  borderColor: colors.border,
-                  shadowColor: colors.primary,
-                },
-              ]}
-            />
-          ))}
-        </Animated.View>
-
-        {/* Stats row */}
-        <View
-          style={[
-            styles.statsRow,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: colors.primary }]}>
-              {bestLevel}
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
-              Meilleur
-            </Text>
+          <View>
+            <Text style={[styles.brand, { color: colors.foreground }]}>MIND<Text style={{ color: colors.primary }}>7</Text></Text>
+            <Text style={[styles.tagline, { color: colors.mutedForeground }]}>7 façons de penser</Text>
           </View>
-          <View
-            style={[styles.statDivider, { backgroundColor: colors.border }]}
-          />
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: colors.primary }]}>
-              {level}
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
-              Niveau
-            </Text>
-          </View>
-          <View
-            style={[styles.statDivider, { backgroundColor: colors.border }]}
-          />
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: colors.primary }]}>
-              {totalGamesPlayed}
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
-              Parties
-            </Text>
+          <View style={[styles.scoreBadge, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.scoreValue, { color: colors.primary }]}>{totalScore}</Text>
+            <Text style={[styles.scoreLabel, { color: colors.mutedForeground }]}>pts</Text>
           </View>
         </View>
 
-        {/* Play button */}
-        <Pressable
-          onPress={() => router.push("/game")}
-          style={({ pressed }) => [
-            styles.playButton,
-            {
-              backgroundColor: colors.primary,
-              opacity: pressed ? 0.85 : 1,
-              transform: [{ scale: pressed ? 0.97 : 1 }],
-            },
-          ]}
-        >
-          <Ionicons name="play" size={24} color={colors.primaryForeground} />
-          <Text
-            style={[styles.playButtonText, { color: colors.primaryForeground }]}
+        {/* Current level banner */}
+        {currentLevel && (
+          <Pressable
+            onPress={() => router.push("/game")}
+            style={({ pressed }) => [
+              styles.currentBanner,
+              {
+                backgroundColor: colors.card,
+                borderColor: CATEGORY_COLORS[currentLevel.category],
+                opacity: pressed ? 0.9 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              },
+            ]}
           >
-            Jouer — Niveau {level}
-          </Text>
-        </Pressable>
-
-        {/* How to play */}
-        <View
-          style={[
-            styles.howToPlay,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
-          <Text
-            style={[styles.howToPlayTitle, { color: colors.foreground }]}
-          >
-            Comment jouer
-          </Text>
-          {[
-            { icon: "eye-outline" as const, text: "Observe la séquence lumineuse" },
-            { icon: "hand-left-outline" as const, text: "Reproduis-la dans le bon ordre" },
-            { icon: "trending-up-outline" as const, text: "200 niveaux de difficulté" },
-          ].map(({ icon, text }, idx) => (
-            <View key={idx} style={styles.howToPlayRow}>
-              <Ionicons
-                name={icon}
-                size={18}
-                color={colors.primary}
-                style={styles.howToPlayIcon}
-              />
-              <Text
-                style={[styles.howToPlayText, { color: colors.mutedForeground }]}
-              >
-                {text}
+            <View style={[styles.catTag, { backgroundColor: CATEGORY_COLORS[currentLevel.category] + "22" }]}>
+              <Text style={[styles.catTagText, { color: CATEGORY_COLORS[currentLevel.category] }]}>
+                {CATEGORY_LABELS[currentLevel.category]}
               </Text>
             </View>
-          ))}
-        </View>
+            <View style={styles.bannerBody}>
+              <View>
+                <Text style={[styles.bannerChapter, { color: colors.mutedForeground }]}>
+                  {currentChapter ? `Chapitre ${currentChapter.id} — ${currentChapter.title}` : ""}
+                </Text>
+                <Text style={[styles.bannerTitle, { color: colors.foreground }]}>
+                  Niveau {currentLevelId} — {currentLevel.title}
+                </Text>
+              </View>
+              <View style={[styles.playPill, { backgroundColor: CATEGORY_COLORS[currentLevel.category] }]}>
+                <Ionicons name="play" size={16} color="#fff" />
+              </View>
+            </View>
+
+            <View style={[styles.progressTrack, { backgroundColor: colors.secondary }]}>
+              <View
+                style={[
+                  styles.progressFill,
+                  { backgroundColor: CATEGORY_COLORS[currentLevel.category], width: `${completionPct}%` },
+                ]}
+              />
+            </View>
+            <Text style={[styles.progressLabel, { color: colors.mutedForeground }]}>
+              {completedLevels.length} / {LEVELS.length} niveaux — {completionPct}%
+            </Text>
+          </Pressable>
+        )}
+
+        {/* Chapters */}
+        {CHAPTERS.map((chapter) => {
+          const chapterDone = chapter.levels.filter((id) => isLevelCompleted(id)).length;
+          const isUnlocked = isLevelUnlocked(chapter.levels[0]);
+
+          return (
+            <View key={chapter.id} style={[styles.chapter, { borderColor: colors.border, backgroundColor: colors.card }]}>
+              <View style={styles.chapterHeader}>
+                <View>
+                  <Text style={[styles.chapterNum, { color: colors.mutedForeground }]}>CHAPITRE {chapter.id}</Text>
+                  <Text style={[styles.chapterTitle, { color: isUnlocked ? colors.foreground : colors.mutedForeground }]}>
+                    {chapter.title}
+                  </Text>
+                </View>
+                <Text style={[styles.chapterProgress, { color: colors.mutedForeground }]}>
+                  {chapterDone}/{chapter.levels.length}
+                </Text>
+              </View>
+
+              <View style={styles.levelList}>
+                {chapter.levels.map((levelId) => {
+                  const lvl = LEVELS.find((l) => l.id === levelId);
+                  if (!lvl) return null;
+                  const done = isLevelCompleted(levelId);
+                  const unlocked = isLevelUnlocked(levelId);
+                  const isCurrent = levelId === currentLevelId;
+                  const catColor = CATEGORY_COLORS[lvl.category];
+
+                  return (
+                    <Pressable
+                      key={levelId}
+                      onPress={() => unlocked && router.push({ pathname: "/game", params: { levelId: String(levelId) } })}
+                      disabled={!unlocked}
+                      style={({ pressed }) => [
+                        styles.levelRow,
+                        {
+                          backgroundColor: isCurrent ? catColor + "12" : "transparent",
+                          borderColor: isCurrent ? catColor + "55" : "transparent",
+                          opacity: !unlocked ? 0.4 : pressed ? 0.75 : 1,
+                        },
+                      ]}
+                    >
+                      <View style={[styles.levelIcon, { backgroundColor: done ? catColor + "22" : colors.secondary, borderColor: done ? catColor : colors.border }]}>
+                        <Ionicons
+                          name={done ? "checkmark" : unlocked ? TYPE_ICONS[lvl.type] : "lock-closed-outline"}
+                          size={14}
+                          color={done ? catColor : colors.mutedForeground}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.levelTitle, { color: unlocked ? colors.foreground : colors.mutedForeground }]}>
+                          {lvl.title}
+                        </Text>
+                        <Text style={[styles.levelMeta, { color: colors.mutedForeground }]}>
+                          {CATEGORY_LABELS[lvl.category]} · {lvl.type.charAt(0).toUpperCase() + lvl.type.slice(1)}
+                        </Text>
+                      </View>
+                      {isCurrent && (
+                        <View style={[styles.currentDot, { backgroundColor: catColor }]} />
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          );
+        })}
       </Animated.View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    alignItems: "center",
-    paddingHorizontal: 24,
-    gap: 28,
-  },
-  header: {
-    alignItems: "center",
-    gap: 6,
-  },
-  brandName: {
-    fontSize: 42,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: 8,
-  },
-  tagline: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    letterSpacing: 4,
-    textTransform: "uppercase",
-  },
-  gridPreview: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    width: 160,
-    height: 160,
-    gap: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  previewButton: {
-    width: 68,
-    height: 68,
-    borderRadius: 16,
-    borderWidth: 1,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  statsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    width: "100%",
-  },
-  statItem: {
-    flex: 1,
-    alignItems: "center",
-    gap: 4,
-  },
-  statValue: {
-    fontSize: 24,
-    fontFamily: "Inter_700Bold",
-  },
-  statLabel: {
-    fontSize: 11,
-    fontFamily: "Inter_400Regular",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  statDivider: {
-    width: 1,
-    height: 36,
-    marginHorizontal: 8,
-  },
-  playButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    borderRadius: 20,
-    paddingVertical: 18,
-    paddingHorizontal: 40,
-    width: "100%",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  playButtonText: {
-    fontSize: 18,
-    fontFamily: "Inter_600SemiBold",
-  },
-  howToPlay: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 20,
-    width: "100%",
-    gap: 12,
-  },
-  howToPlayTitle: {
-    fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
-    textTransform: "uppercase",
-    letterSpacing: 2,
-    marginBottom: 4,
-  },
-  howToPlayRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  howToPlayIcon: {
-    width: 22,
-  },
-  howToPlayText: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    flex: 1,
-  },
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: 20 },
+  inner: { gap: 20 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  brand: { fontSize: 38, fontFamily: "Inter_700Bold", letterSpacing: 4 },
+  tagline: { fontSize: 12, fontFamily: "Inter_400Regular", letterSpacing: 3, textTransform: "uppercase", marginTop: 2 },
+  scoreBadge: { borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 8, alignItems: "center" },
+  scoreValue: { fontSize: 20, fontFamily: "Inter_700Bold" },
+  scoreLabel: { fontSize: 10, fontFamily: "Inter_400Regular", textTransform: "uppercase", letterSpacing: 1 },
+  currentBanner: { borderRadius: 20, borderWidth: 1.5, padding: 18, gap: 12 },
+  catTag: { alignSelf: "flex-start", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  catTagText: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 2 },
+  bannerBody: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  bannerChapter: { fontSize: 11, fontFamily: "Inter_400Regular", letterSpacing: 1, marginBottom: 4 },
+  bannerTitle: { fontSize: 18, fontFamily: "Inter_700Bold" },
+  playPill: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  progressTrack: { height: 3, borderRadius: 2, overflow: "hidden" },
+  progressFill: { height: 3, borderRadius: 2 },
+  progressLabel: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  chapter: { borderRadius: 16, borderWidth: 1, overflow: "hidden" },
+  chapterHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, paddingBottom: 12 },
+  chapterNum: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 2 },
+  chapterTitle: { fontSize: 17, fontFamily: "Inter_700Bold", marginTop: 2 },
+  chapterProgress: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  levelList: { gap: 0 },
+  levelRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 0, borderWidth: 1, marginHorizontal: 8, marginBottom: 4, borderRadius: 10 },
+  levelIcon: { width: 30, height: 30, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  levelTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  levelMeta: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
+  currentDot: { width: 8, height: 8, borderRadius: 4 },
 });

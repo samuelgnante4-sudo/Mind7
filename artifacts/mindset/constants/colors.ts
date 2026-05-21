@@ -1,63 +1,63 @@
 const colors = {
   light: {
     text: "#e8eaf6",
-    tint: "#4fd1c5",
+    tint: "#9f7aea",
 
-    background: "#0b0f1a",
+    background: "#080c14",
     foreground: "#e8eaf6",
 
-    card: "#141927",
+    card: "#10151f",
     cardForeground: "#e8eaf6",
 
-    primary: "#4fd1c5",
-    primaryForeground: "#0b0f1a",
+    primary: "#9f7aea",
+    primaryForeground: "#ffffff",
 
-    secondary: "#1c2233",
+    secondary: "#161c2a",
     secondaryForeground: "#a0aec0",
 
-    muted: "#1c2233",
-    mutedForeground: "#718096",
+    muted: "#161c2a",
+    mutedForeground: "#6b7280",
 
-    accent: "#2d3748",
+    accent: "#1e2535",
     accentForeground: "#e8eaf6",
 
     destructive: "#fc8181",
     destructiveForeground: "#0b0f1a",
 
-    border: "#2d3748",
-    input: "#2d3748",
+    border: "#1e2535",
+    input: "#1e2535",
   },
 
   dark: {
     text: "#e8eaf6",
-    tint: "#4fd1c5",
+    tint: "#9f7aea",
 
-    background: "#0b0f1a",
+    background: "#080c14",
     foreground: "#e8eaf6",
 
-    card: "#141927",
+    card: "#10151f",
     cardForeground: "#e8eaf6",
 
-    primary: "#4fd1c5",
-    primaryForeground: "#0b0f1a",
+    primary: "#9f7aea",
+    primaryForeground: "#ffffff",
 
-    secondary: "#1c2233",
+    secondary: "#161c2a",
     secondaryForeground: "#a0aec0",
 
-    muted: "#1c2233",
-    mutedForeground: "#718096",
+    muted: "#161c2a",
+    mutedForeground: "#6b7280",
 
-    accent: "#2d3748",
+    accent: "#1e2535",
     accentForeground: "#e8eaf6",
 
     destructive: "#fc8181",
     destructiveForeground: "#0b0f1a",
 
-    border: "#2d3748",
-    input: "#2d3748",
+    border: "#1e2535",
+    input: "#1e2535",
   },
 
-  radius: 20,
+  radius: 16,
 };
 
 export default colors;
