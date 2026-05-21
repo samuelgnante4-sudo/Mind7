@@ -19,14 +19,11 @@ import { useColors } from "@/hooks/useColors";
 interface Props {
   level: ReflectionLevel;
   catColor: string;
-  onComplete: () => void;
+  onComplete: (chosenIndex: number) => void; // passes chosen option index (-1 = timeout)
 }
 
-// Timer starts only AFTER the question has been read aloud
 const TIMER_SECONDS = 20;
-// Buffer after scenario speech before timer starts
 const POST_READ_BUFFER_MS = 2500;
-
 const SPEECH_RATE = 0.72;
 const SPEECH_PITCH = 0.92;
 
@@ -38,10 +35,8 @@ export default function ReflectionGame({ level, catColor, onComplete }: Props) {
 
   const [chosen, setChosen] = useState<number | null>(null);
   const [timedOut, setTimedOut] = useState(false);
-  // Timer is inactive (-1) until the question has been fully read
   const [timeLeft, setTimeLeft] = useState(-1);
   const [timerActive, setTimerActive] = useState(false);
-  const [scenarioRead, setScenarioRead] = useState(false);
   const [revealPhase, setRevealPhase] = useState<RevealPhase>("none");
   const [mascotState, setMascotState] = useState<MascotState>("idle");
 
@@ -53,8 +48,7 @@ export default function ReflectionGame({ level, catColor, onComplete }: Props) {
   const psychY = useRef(new Animated.Value(22)).current;
   const btnOpacity = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  const triggerRevealRef = useRef<() => void>();
+  const triggerRevealRef = useRef<(idx: number) => void>();
 
   const fadeIn = (opacity: Animated.Value, y: Animated.Value, delay = 0) =>
     Animated.parallel([
@@ -62,7 +56,11 @@ export default function ReflectionGame({ level, catColor, onComplete }: Props) {
       Animated.timing(y, { toValue: 0, duration: 500, delay, useNativeDriver: true }),
     ]);
 
-  // Read scenario aloud on mount
+  useEffect(() => {
+    return () => { Speech.stop(); };
+  }, []);
+
+  // Read scenario on mount
   useEffect(() => {
     const delay = setTimeout(() => {
       Speech.speak(level.scenario, {
@@ -70,8 +68,6 @@ export default function ReflectionGame({ level, catColor, onComplete }: Props) {
         pitch: SPEECH_PITCH,
         rate: SPEECH_RATE,
         onDone: () => {
-          setScenarioRead(true);
-          // If this level has a timer, start it after a buffer
           if (level.hasTimer) {
             setTimeout(() => {
               setTimeLeft(TIMER_SECONDS);
@@ -79,9 +75,15 @@ export default function ReflectionGame({ level, catColor, onComplete }: Props) {
             }, POST_READ_BUFFER_MS);
           }
         },
-        onStopped: () => setScenarioRead(true),
+        onStopped: () => {
+          if (level.hasTimer) {
+            setTimeout(() => {
+              setTimeLeft(TIMER_SECONDS);
+              setTimerActive(true);
+            }, POST_READ_BUFFER_MS);
+          }
+        },
         onError: () => {
-          setScenarioRead(true);
           if (level.hasTimer) {
             setTimeout(() => {
               setTimeLeft(TIMER_SECONDS);
@@ -90,20 +92,16 @@ export default function ReflectionGame({ level, catColor, onComplete }: Props) {
           }
         },
       });
-    }, 400); // slight delay after component mounts
-
-    return () => {
-      clearTimeout(delay);
-      Speech.stop();
-    };
+    }, 500);
+    return () => clearTimeout(delay);
   }, []);
 
-  // Countdown — only ticks when timerActive and not yet chosen
+  // Timer countdown
   useEffect(() => {
     if (!timerActive || !level.hasTimer || chosen !== null || timedOut) return;
     if (timeLeft <= 0) {
       setTimedOut(true);
-      triggerRevealRef.current?.();
+      triggerRevealRef.current?.(-1);
       return;
     }
     if (timeLeft <= 5) {
@@ -117,12 +115,11 @@ export default function ReflectionGame({ level, catColor, onComplete }: Props) {
     return () => clearTimeout(t);
   }, [timeLeft, timerActive, chosen, timedOut, level.hasTimer]);
 
-  const triggerReveal = () => {
+  const triggerReveal = (idx: number) => {
     setMascotState("thinking");
     setRevealPhase("insight");
     fadeIn(insightOpacity, insightY).start();
 
-    // Dove reads the insight with a natural pause before speaking
     setTimeout(() => {
       Speech.stop();
       Speech.speak(level.insight, {
@@ -132,14 +129,12 @@ export default function ReflectionGame({ level, catColor, onComplete }: Props) {
       });
     }, 600);
 
-    // Phase 2: stats
     setTimeout(() => {
       setMascotState("explaining");
       setRevealPhase("stats");
       fadeIn(statsOpacity, statsY).start();
     }, 1200);
 
-    // Phase 3: psychology card
     setTimeout(() => {
       setMascotState("celebrating");
       setRevealPhase("psychology");
@@ -152,7 +147,6 @@ export default function ReflectionGame({ level, catColor, onComplete }: Props) {
     setTimeout(() => setRevealPhase("done"), 3200);
   };
 
-  // Store triggerReveal in ref so timer effect can call it
   triggerRevealRef.current = triggerReveal;
 
   const handleSelect = (idx: number) => {
@@ -160,7 +154,7 @@ export default function ReflectionGame({ level, catColor, onComplete }: Props) {
     setChosen(idx);
     Speech.stop();
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    triggerReveal();
+    triggerReveal(idx);
   };
 
   const replayConcept = () => {
@@ -179,23 +173,6 @@ export default function ReflectionGame({ level, catColor, onComplete }: Props) {
 
   return (
     <View style={styles.container}>
-      {/* Timer — shown only after scenario has been read */}
-      {level.hasTimer && timerActive && !isRevealed && (
-        <Animated.View style={[styles.timerWrap, { transform: [{ scale: pulseAnim }] }]}>
-          <View style={[styles.timerTrack, { backgroundColor: colors.secondary }]}>
-            <View
-              style={[
-                styles.timerFill,
-                { backgroundColor: timerColor, width: `${timerPct * 100}%` },
-              ]}
-            />
-          </View>
-          <Text style={[styles.timerText, { color: timerColor }]}>
-            {timeLeft > 0 ? `${timeLeft}s — Fais confiance à ton instinct` : "Temps écoulé"}
-          </Text>
-        </Animated.View>
-      )}
-
       {/* Reading indicator */}
       {level.hasTimer && !timerActive && !isRevealed && (
         <View style={[styles.readingHint, { backgroundColor: catColor + "15" }]}>
@@ -203,6 +180,18 @@ export default function ReflectionGame({ level, catColor, onComplete }: Props) {
             🔊 La colombe lit la question… Le chrono démarrera ensuite.
           </Text>
         </View>
+      )}
+
+      {/* Timer */}
+      {level.hasTimer && timerActive && !isRevealed && (
+        <Animated.View style={[styles.timerWrap, { transform: [{ scale: pulseAnim }] }]}>
+          <View style={[styles.timerTrack, { backgroundColor: colors.secondary }]}>
+            <View style={[styles.timerFill, { backgroundColor: timerColor, width: `${timerPct * 100}%` }]} />
+          </View>
+          <Text style={[styles.timerText, { color: timerColor }]}>
+            {timeLeft > 0 ? `${timeLeft}s — Fais confiance à ton instinct` : "Temps écoulé"}
+          </Text>
+        </Animated.View>
       )}
 
       {/* Scenario */}
@@ -222,25 +211,14 @@ export default function ReflectionGame({ level, catColor, onComplete }: Props) {
                 styles.option,
                 {
                   borderColor: isChosen ? catColor : faded ? colors.border + "33" : colors.border,
-                  backgroundColor: isChosen
-                    ? catColor + "18"
-                    : faded
-                    ? colors.secondary + "44"
-                    : colors.secondary,
+                  backgroundColor: isChosen ? catColor + "18" : faded ? colors.secondary + "44" : colors.secondary,
                   opacity: faded ? 0.3 : pressed ? 0.75 : 1,
                   transform: [{ scale: isChosen ? 1.01 : 1 }],
                 },
               ]}
             >
-              <View
-                style={[styles.optionDot, { backgroundColor: isChosen ? catColor : colors.border }]}
-              />
-              <Text
-                style={[
-                  styles.optionText,
-                  { color: isChosen ? colors.foreground : colors.secondaryForeground },
-                ]}
-              >
+              <View style={[styles.optionDot, { backgroundColor: isChosen ? catColor : colors.border }]} />
+              <Text style={[styles.optionText, { color: isChosen ? colors.foreground : colors.secondaryForeground }]}>
                 {opt}
               </Text>
               {isChosen && <Text style={[styles.checkmark, { color: catColor }]}>✓</Text>}
@@ -248,15 +226,7 @@ export default function ReflectionGame({ level, catColor, onComplete }: Props) {
           );
         })}
         {timedOut && (
-          <View
-            style={[
-              styles.timedOut,
-              {
-                backgroundColor: colors.destructive + "15",
-                borderColor: colors.destructive + "44",
-              },
-            ]}
-          >
+          <View style={[styles.timedOut, { backgroundColor: colors.destructive + "15", borderColor: colors.destructive + "44" }]}>
             <Text style={[styles.timedOutText, { color: colors.destructive }]}>
               Temps écoulé — refuser de choisir est aussi une réponse.
             </Text>
@@ -267,20 +237,9 @@ export default function ReflectionGame({ level, catColor, onComplete }: Props) {
       {/* REVEAL */}
       {isRevealed && (
         <View style={styles.reveal}>
-          {/* Mascot + insight bubble */}
-          <Animated.View
-            style={[
-              styles.mascotRow,
-              { opacity: insightOpacity, transform: [{ translateY: insightY }] },
-            ]}
-          >
+          <Animated.View style={[styles.mascotRow, { opacity: insightOpacity, transform: [{ translateY: insightY }] }]}>
             <MascotCharacter state={mascotState} color={primaryColor} size={0.85} />
-            <View
-              style={[
-                styles.speechBubble,
-                { backgroundColor: colors.card, borderColor: catColor + "66" },
-              ]}
-            >
+            <View style={[styles.speechBubble, { backgroundColor: colors.card, borderColor: catColor + "66" }]}>
               <View style={[styles.bubbleArrow, { borderRightColor: colors.card }]} />
               <Text style={[styles.insightText, { color: colors.secondaryForeground }]}>
                 {level.insight}
@@ -288,30 +247,12 @@ export default function ReflectionGame({ level, catColor, onComplete }: Props) {
             </View>
           </Animated.View>
 
-          {/* Stats */}
           {stats && (
-            <Animated.View
-              style={[
-                styles.statsCard,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                  opacity: statsOpacity,
-                  transform: [{ translateY: statsY }],
-                },
-              ]}
-            >
-              <Text style={[styles.statsTitle, { color: colors.mutedForeground }]}>
-                CE QUE LES AUTRES CHOISISSENT
-              </Text>
+            <Animated.View style={[styles.statsCard, { backgroundColor: colors.card, borderColor: colors.border, opacity: statsOpacity, transform: [{ translateY: statsY }] }]}>
+              <Text style={[styles.statsTitle, { color: colors.mutedForeground }]}>CE QUE LES AUTRES CHOISISSENT</Text>
               {stats.map((s, i) => (
                 <View key={i} style={styles.statRow}>
-                  <Text
-                    style={[styles.statLabel, { color: colors.secondaryForeground }]}
-                    numberOfLines={1}
-                  >
-                    {s.label}
-                  </Text>
+                  <Text style={[styles.statLabel, { color: colors.secondaryForeground }]} numberOfLines={1}>{s.label}</Text>
                   <View style={styles.statBarRow}>
                     <View style={[styles.statTrack, { backgroundColor: colors.secondary }]}>
                       <View style={[styles.statFill, { backgroundColor: catColor, width: `${s.pct}%` }]} />
@@ -323,73 +264,28 @@ export default function ReflectionGame({ level, catColor, onComplete }: Props) {
             </Animated.View>
           )}
 
-          {/* Psychology card */}
-          <Animated.View
-            style={[
-              styles.psychCard,
-              {
-                backgroundColor: catColor + "0e",
-                borderColor: catColor + "55",
-                opacity: psychOpacity,
-                transform: [{ translateY: psychY }],
-              },
-            ]}
-          >
+          <Animated.View style={[styles.psychCard, { backgroundColor: catColor + "0e", borderColor: catColor + "55", opacity: psychOpacity, transform: [{ translateY: psychY }] }]}>
             <View style={styles.psychHeader}>
               <View style={{ flex: 1, gap: 4 }}>
-                <Text style={[styles.psychLabel, { color: catColor + "aa" }]}>
-                  CONCEPT PSYCHOLOGIQUE
-                </Text>
-                <Text style={[styles.psychConcept, { color: catColor }]}>
-                  {level.psychology.concept}
-                </Text>
+                <Text style={[styles.psychLabel, { color: catColor + "aa" }]}>CONCEPT PSYCHOLOGIQUE</Text>
+                <Text style={[styles.psychConcept, { color: catColor }]}>{level.psychology.concept}</Text>
               </View>
-              <Pressable
-                onPress={replayConcept}
-                hitSlop={10}
-                style={({ pressed }) => [
-                  styles.speakerBtn,
-                  { backgroundColor: catColor + "22", opacity: pressed ? 0.6 : 1 },
-                ]}
-              >
+              <Pressable onPress={replayConcept} hitSlop={10} style={({ pressed }) => [styles.speakerBtn, { backgroundColor: catColor + "22", opacity: pressed ? 0.6 : 1 }]}>
                 <Ionicons name="volume-high-outline" size={16} color={catColor} />
               </Pressable>
             </View>
-
-            <View
-              style={[
-                styles.knownBadge,
-                {
-                  backgroundColor:
-                    level.psychology.known === "célèbre" ? "#38a16922" : "#e05c7a22",
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.knownText,
-                  { color: level.psychology.known === "célèbre" ? "#38a169" : "#e05c7a" },
-                ]}
-              >
-                {level.psychology.known === "célèbre"
-                  ? "★ Dilemme classique"
-                  : "◆ Concept méconnu"}
+            <View style={[styles.knownBadge, { backgroundColor: level.psychology.known === "célèbre" ? "#38a16922" : "#e05c7a22" }]}>
+              <Text style={[styles.knownText, { color: level.psychology.known === "célèbre" ? "#38a169" : "#e05c7a" }]}>
+                {level.psychology.known === "célèbre" ? "★ Dilemme classique" : "◆ Concept méconnu"}
               </Text>
             </View>
-
-            <Text style={[styles.psychExplain, { color: colors.mutedForeground }]}>
-              {level.psychology.explanation}
-            </Text>
+            <Text style={[styles.psychExplain, { color: colors.mutedForeground }]}>{level.psychology.explanation}</Text>
           </Animated.View>
 
-          {/* Continue */}
           <Animated.View style={{ opacity: btnOpacity }}>
             <Pressable
-              onPress={onComplete}
-              style={({ pressed }) => [
-                styles.continueBtn,
-                { backgroundColor: catColor, opacity: pressed ? 0.8 : 1 },
-              ]}
+              onPress={() => onComplete(chosen ?? -1)}
+              style={({ pressed }) => [styles.continueBtn, { backgroundColor: catColor, opacity: pressed ? 0.8 : 1 }]}
             >
               <Text style={styles.continueBtnText}>Dilemme suivant →</Text>
             </Pressable>
@@ -408,23 +304,9 @@ const styles = StyleSheet.create({
   timerTrack: { height: 4, borderRadius: 2, overflow: "hidden" },
   timerFill: { height: 4, borderRadius: 2 },
   timerText: { fontSize: 12, fontFamily: "Inter_500Medium", textAlign: "center", letterSpacing: 0.5 },
-  scenario: {
-    fontSize: 20,
-    fontFamily: "Inter_600SemiBold",
-    lineHeight: 31,
-    textAlign: "center",
-    paddingHorizontal: 4,
-  },
+  scenario: { fontSize: 20, fontFamily: "Inter_600SemiBold", lineHeight: 31, textAlign: "center", paddingHorizontal: 4 },
   options: { gap: 10 },
-  option: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    paddingHorizontal: 16,
-    paddingVertical: 15,
-  },
+  option: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 16, paddingVertical: 15 },
   optionDot: { width: 9, height: 9, borderRadius: 5 },
   optionText: { fontSize: 15, fontFamily: "Inter_500Medium", flex: 1 },
   checkmark: { fontSize: 16, fontFamily: "Inter_700Bold" },
@@ -432,26 +314,8 @@ const styles = StyleSheet.create({
   timedOutText: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 20, textAlign: "center" },
   reveal: { gap: 16 },
   mascotRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-  speechBubble: {
-    flex: 1,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    padding: 14,
-    borderBottomLeftRadius: 4,
-    position: "relative",
-  },
-  bubbleArrow: {
-    position: "absolute",
-    left: -8,
-    bottom: 16,
-    width: 0,
-    height: 0,
-    borderTopWidth: 6,
-    borderBottomWidth: 6,
-    borderRightWidth: 8,
-    borderTopColor: "transparent",
-    borderBottomColor: "transparent",
-  },
+  speechBubble: { flex: 1, borderRadius: 16, borderWidth: 1.5, padding: 14, borderBottomLeftRadius: 4, position: "relative" },
+  bubbleArrow: { position: "absolute", left: -8, bottom: 16, width: 0, height: 0, borderTopWidth: 6, borderBottomWidth: 6, borderRightWidth: 8, borderTopColor: "transparent", borderBottomColor: "transparent" },
   insightText: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 22 },
   statsCard: { borderRadius: 16, borderWidth: 1, padding: 16, gap: 12 },
   statsTitle: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 2 },

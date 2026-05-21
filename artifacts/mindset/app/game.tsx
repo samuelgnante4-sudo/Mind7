@@ -7,12 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import LevelIntro from "@/components/LevelIntro";
 import ReflectionGame from "@/components/games/ReflectionGame";
 import { useGame } from "@/context/GameContext";
-import {
-  CATEGORY_COLORS,
-  CATEGORY_LABELS,
-  LEVELS,
-  ReflectionLevel,
-} from "@/data/levels";
+import { CATEGORY_COLORS, CATEGORY_LABELS, LEVELS, ReflectionLevel } from "@/data/levels";
 import { useColors } from "@/hooks/useColors";
 
 export default function GameScreen() {
@@ -26,8 +21,12 @@ export default function GameScreen() {
 
   const [phase, setPhase] = useState<"intro" | "game" | "complete">("intro");
 
-  const handleComplete = async () => {
-    await completeLevel(level.id);
+  const handleComplete = async (chosenIndex: number) => {
+    const score =
+      chosenIndex >= 0 && chosenIndex < (level as ReflectionLevel).optionScores.length
+        ? (level as ReflectionLevel).optionScores[chosenIndex]
+        : 0;
+    await completeLevel(level.id, score);
     setPhase("complete");
   };
 
@@ -38,57 +37,34 @@ export default function GameScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      {/* ── GAME ── */}
       {phase === "game" && (
         <>
           <View style={[styles.topBar, { paddingTop: topPad + 10 }]}>
-            <Pressable
-              onPress={() => router.back()}
-              hitSlop={12}
-              style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
-            >
+            <Pressable onPress={() => router.back()} hitSlop={12} style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}>
               <Ionicons name="chevron-back" size={22} color={colors.mutedForeground} />
             </Pressable>
             <View style={styles.topCenter}>
               <View style={[styles.catPill, { backgroundColor: catColor + "20" }]}>
-                <Text style={[styles.catText, { color: catColor }]}>
-                  {CATEGORY_LABELS[level.category]}
-                </Text>
+                <Text style={[styles.catText, { color: catColor }]}>{CATEGORY_LABELS[level.category]}</Text>
               </View>
             </View>
             <View style={[styles.lvlBadge, { borderColor: catColor + "44" }]}>
               <Text style={[styles.lvlText, { color: catColor }]}>{level.id}</Text>
             </View>
           </View>
-
           <View style={[styles.accentLine, { backgroundColor: catColor }]} />
-
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={[styles.scrollContent, { paddingBottom: botPad + 40 }]}
-            showsVerticalScrollIndicator={false}
-          >
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.scrollContent, { paddingBottom: botPad + 40 }]} showsVerticalScrollIndicator={false}>
             <View style={styles.content}>
               <View style={styles.titleBlock}>
-                <Text style={[styles.levelNum, { color: colors.mutedForeground }]}>
-                  Niveau {level.id} · Réflexion
-                </Text>
-                <Text style={[styles.levelTitle, { color: colors.foreground }]}>
-                  {level.title}
-                </Text>
+                <Text style={[styles.levelNum, { color: colors.mutedForeground }]}>Niveau {level.id} · Réflexion</Text>
+                <Text style={[styles.levelTitle, { color: colors.foreground }]}>{level.title}</Text>
               </View>
-
-              <ReflectionGame
-                level={level as ReflectionLevel}
-                catColor={catColor}
-                onComplete={handleComplete}
-              />
+              <ReflectionGame level={level as ReflectionLevel} catColor={catColor} onComplete={handleComplete} />
             </View>
           </ScrollView>
         </>
       )}
 
-      {/* ── COMPLETE ── */}
       {phase === "complete" && (
         <>
           <View style={[styles.topBar, { paddingTop: topPad + 10 }]}>
@@ -97,55 +73,38 @@ export default function GameScreen() {
             </Pressable>
             <View style={{ flex: 1 }} />
           </View>
-
-          <ScrollView
-            contentContainerStyle={[styles.completeContent, { paddingBottom: botPad + 40 }]}
-            showsVerticalScrollIndicator={false}
-          >
+          <ScrollView contentContainerStyle={[styles.completeContent, { paddingBottom: botPad + 40 }]} showsVerticalScrollIndicator={false}>
             <View style={[styles.completeIcon, { backgroundColor: catColor + "20", borderColor: catColor + "44" }]}>
               <Ionicons name="checkmark" size={40} color={catColor} />
             </View>
-            <Text style={[styles.completeTitle, { color: colors.foreground }]}>
-              Niveau terminé !
-            </Text>
-            <Text style={[styles.completeSub, { color: colors.mutedForeground }]}>+100 points</Text>
+            <Text style={[styles.completeTitle, { color: colors.foreground }]}>Dilemme complété !</Text>
+            <Text style={[styles.completeSub, { color: colors.mutedForeground }]}>Ton profil psychologique se précise.</Text>
 
             {nextLevel ? (
               <>
                 <View style={[styles.nextPreview, { backgroundColor: colors.card, borderColor: CATEGORY_COLORS[nextLevel.category] + "55" }]}>
                   <Text style={[styles.nextLabel, { color: colors.mutedForeground }]}>Prochain dilemme</Text>
                   <Text style={[styles.nextTitle, { color: colors.foreground }]}>{nextLevel.title}</Text>
-                  <Text style={[styles.nextCat, { color: CATEGORY_COLORS[nextLevel.category] }]}>
-                    {CATEGORY_LABELS[nextLevel.category]}
-                  </Text>
+                  <Text style={[styles.nextCat, { color: CATEGORY_COLORS[nextLevel.category] }]}>{CATEGORY_LABELS[nextLevel.category]}</Text>
                 </View>
                 <Pressable
                   onPress={() => router.replace({ pathname: "/game", params: { levelId: String(nextLevel.id) } })}
-                  style={({ pressed }) => [
-                    styles.nextBtn,
-                    { backgroundColor: CATEGORY_COLORS[nextLevel.category], opacity: pressed ? 0.85 : 1 },
-                  ]}
+                  style={({ pressed }) => [styles.nextBtn, { backgroundColor: CATEGORY_COLORS[nextLevel.category], opacity: pressed ? 0.85 : 1 }]}
                 >
                   <Text style={styles.nextBtnText}>Dilemme suivant →</Text>
                 </Pressable>
               </>
             ) : (
-              <Text style={[styles.completeSub, { color: colors.mutedForeground }]}>
-                Tu as tout terminé. 30 dilemmes. 30 réflexions. 🎓
-              </Text>
+              <Text style={[styles.completeSub, { color: colors.mutedForeground }]}>30 dilemmes. Ton profil est complet. 🎓</Text>
             )}
 
-            <Pressable
-              onPress={() => router.back()}
-              style={({ pressed }) => [styles.homeBtn, { borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
-            >
-              <Text style={[styles.homeBtnText, { color: colors.mutedForeground }]}>← Retour</Text>
+            <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.homeBtn, { borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}>
+              <Text style={[styles.homeBtnText, { color: colors.mutedForeground }]}>← Voir mon profil</Text>
             </Pressable>
           </ScrollView>
         </>
       )}
 
-      {/* ── INTRO overlay ── */}
       {phase === "intro" && (
         <>
           <View style={[styles.introBack, { paddingTop: topPad + 10 }]}>
@@ -177,7 +136,7 @@ const styles = StyleSheet.create({
   completeContent: { flexGrow: 1, alignItems: "center", justifyContent: "center", gap: 18, paddingHorizontal: 24, paddingTop: 40 },
   completeIcon: { width: 88, height: 88, borderRadius: 44, borderWidth: 2, alignItems: "center", justifyContent: "center" },
   completeTitle: { fontSize: 26, fontFamily: "Inter_700Bold" },
-  completeSub: { fontSize: 14, fontFamily: "Inter_400Regular" },
+  completeSub: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center" },
   nextPreview: { width: "100%", borderRadius: 16, borderWidth: 1.5, padding: 18, gap: 4 },
   nextLabel: { fontSize: 11, fontFamily: "Inter_400Regular", letterSpacing: 1 },
   nextTitle: { fontSize: 18, fontFamily: "Inter_700Bold" },

@@ -5,20 +5,56 @@ import { Animated, Platform, Pressable, ScrollView, StyleSheet, Text, View } fro
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import MascotCharacter from "@/components/MascotCharacter";
-import { useGame } from "@/context/GameContext";
+import { PSYCH_PROFILES, useGame } from "@/context/GameContext";
 import { useTheme } from "@/context/ThemeContext";
 import { CATEGORY_COLORS, CATEGORY_LABELS, CHAPTERS, LEVELS } from "@/data/levels";
 import { useColors } from "@/hooks/useColors";
 
-const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  reflection: "eye-outline",
-};
+// Spectrum bar — 7 dots representing the 7 tiers
+function ProfileSpectrum({ position, accent }: { position: number; accent: string }) {
+  const colors = useColors();
+  return (
+    <View style={spectrum.wrap}>
+      <Text style={spectrum.endLabel}>🕳️</Text>
+      <View style={spectrum.track}>
+        {PSYCH_PROFILES.map((p, i) => {
+          const dotPos = i / (PSYCH_PROFILES.length - 1);
+          const isActive = Math.abs(dotPos - position) < 0.09;
+          return (
+            <View
+              key={p.id}
+              style={[
+                spectrum.dot,
+                {
+                  backgroundColor: isActive ? accent : colors.secondary,
+                  width: isActive ? 14 : 8,
+                  height: isActive ? 14 : 8,
+                  borderRadius: isActive ? 7 : 4,
+                  borderWidth: isActive ? 2 : 0,
+                  borderColor: isActive ? accent + "55" : "transparent",
+                },
+              ]}
+            />
+          );
+        })}
+      </View>
+      <Text style={spectrum.endLabel}>🕊️</Text>
+    </View>
+  );
+}
+
+const spectrum = StyleSheet.create({
+  wrap: { flexDirection: "row", alignItems: "center", gap: 8 },
+  track: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  dot: {},
+  endLabel: { fontSize: 16 },
+});
 
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { primaryColor } = useTheme();
-  const { currentLevelId, completedLevels, totalScore, isLevelCompleted, isLevelUnlocked } = useGame();
+  const { currentLevelId, completedLevels, profile, profileScore, profilePosition, isLevelCompleted, isLevelUnlocked } = useGame();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -31,6 +67,7 @@ export default function HomeScreen() {
   const completionPct = Math.round((completedLevels.length / LEVELS.length) * 100);
   const currentLevel = LEVELS.find((l) => l.id === currentLevelId);
   const currentChapter = CHAPTERS.find((c) => c.levels.includes(currentLevelId));
+  const answeredCount = completedLevels.length;
 
   return (
     <ScrollView
@@ -47,26 +84,95 @@ export default function HomeScreen() {
             </Text>
             <Text style={[styles.tagline, { color: colors.mutedForeground }]}>7 façons de penser</Text>
           </View>
-          <View style={styles.headerRight}>
-            {/* Customize button */}
-            <Pressable
-              onPress={() => router.push("/customize")}
-              style={({ pressed }) => [
-                styles.customizeBtn,
-                { backgroundColor: colors.card, borderColor: primaryColor + "55", opacity: pressed ? 0.7 : 1 },
-              ]}
-            >
-              <View style={[styles.colorDot, { backgroundColor: primaryColor }]} />
-            </Pressable>
-            {/* Score */}
-            <View style={[styles.scoreBadge, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.scoreValue, { color: primaryColor }]}>{totalScore}</Text>
-              <Text style={[styles.scoreLabel, { color: colors.mutedForeground }]}>pts</Text>
-            </View>
-          </View>
+          <Pressable
+            onPress={() => router.push("/customize")}
+            style={({ pressed }) => [
+              styles.customizeBtn,
+              { backgroundColor: colors.card, borderColor: primaryColor + "55", opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <View style={[styles.colorDot, { backgroundColor: primaryColor }]} />
+          </Pressable>
         </View>
 
-        {/* Mascot + current level banner */}
+        {/* ── PSYCHOLOGICAL PROFILE CARD ── */}
+        {answeredCount === 0 ? (
+          // Not started yet
+          <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.profileTopRow}>
+              <Text style={styles.profileEmoji}>🔮</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.profileUnknownLabel, { color: colors.mutedForeground }]}>TON PROFIL PSYCHOLOGIQUE</Text>
+                <Text style={[styles.profileName, { color: colors.foreground }]}>Inconnu</Text>
+              </View>
+            </View>
+            <Text style={[styles.profileTagline, { color: colors.mutedForeground }]}>
+              Réponds à au moins 1 dilemme pour découvrir ton profil.
+            </Text>
+            <View style={[styles.profileProgress, { backgroundColor: colors.secondary }]}>
+              <Text style={[styles.profileProgressText, { color: colors.mutedForeground }]}>
+                0 / 30 dilemmes répondus
+              </Text>
+            </View>
+          </View>
+        ) : profile ? (
+          // Profile known
+          <View
+            style={[
+              styles.profileCard,
+              { backgroundColor: profile.bg, borderColor: profile.accent + "44" },
+            ]}
+          >
+            <View style={styles.profileTopRow}>
+              <Text style={styles.profileEmoji}>{profile.emoji}</Text>
+              <View style={{ flex: 1, gap: 3 }}>
+                <Text style={[styles.profileUnknownLabel, { color: profile.accent + "aa" }]}>
+                  TON PROFIL · {answeredCount} DILEMME{answeredCount > 1 ? "S" : ""}
+                </Text>
+                <Text style={[styles.profileName, { color: profile.accent }]}>
+                  {profile.label}
+                </Text>
+              </View>
+              <View style={[styles.percentileBadge, { backgroundColor: profile.accent + "20", borderColor: profile.accent + "44" }]}>
+                <Text style={[styles.percentileText, { color: profile.accent }]}>
+                  {profile.percentile}
+                </Text>
+                <Text style={[styles.percentileSub, { color: profile.accent + "88" }]}>
+                  pop.
+                </Text>
+              </View>
+            </View>
+
+            <Text style={[styles.profileTagline, { color: profile.accent }]}>
+              "{profile.tagline}"
+            </Text>
+
+            <Text style={[styles.profileDesc, { color: profile.accent + "cc" }]}>
+              {profile.description}
+            </Text>
+
+            {/* Spectrum */}
+            <View style={[styles.spectrumSection, { borderTopColor: profile.accent + "22" }]}>
+              <Text style={[styles.spectrumLabel, { color: profile.accent + "77" }]}>
+                SPECTRE PSYCHOLOGIQUE
+              </Text>
+              <ProfileSpectrum position={profilePosition} accent={profile.accent} />
+              <View style={styles.spectrumLegend}>
+                <Text style={[styles.spectrumLegendText, { color: profile.accent + "66" }]}>Psychopathe</Text>
+                <Text style={[styles.spectrumLegendText, { color: profile.accent + "66" }]}>Altruiste pur</Text>
+              </View>
+            </View>
+
+            {/* Progress toward next tier */}
+            {answeredCount < 30 && (
+              <Text style={[styles.profileContinue, { color: profile.accent + "77" }]}>
+                {30 - answeredCount} dilemme{30 - answeredCount > 1 ? "s" : ""} restant{30 - answeredCount > 1 ? "s" : ""} pour affiner ton profil →
+              </Text>
+            )}
+          </View>
+        ) : null}
+
+        {/* Current level banner */}
         {currentLevel && (
           <Pressable
             onPress={() => router.push("/game")}
@@ -100,15 +206,13 @@ export default function HomeScreen() {
             </View>
 
             <View style={[styles.progressTrack, { backgroundColor: colors.secondary }]}>
-              <View
-                style={[styles.progressFill, { backgroundColor: CATEGORY_COLORS[currentLevel.category], width: `${completionPct}%` }]}
-              />
+              <View style={[styles.progressFill, { backgroundColor: CATEGORY_COLORS[currentLevel.category], width: `${completionPct}%` }]} />
             </View>
             <Text style={[styles.progressLabel, { color: colors.mutedForeground }]}>
               {completedLevels.length} / {LEVELS.length} niveaux · {completionPct}%
             </Text>
 
-            <View style={[styles.playRow]}>
+            <View style={styles.playRow}>
               <View style={[styles.playBtn, { backgroundColor: CATEGORY_COLORS[currentLevel.category] }]}>
                 <Ionicons name="play" size={16} color="#fff" />
                 <Text style={styles.playBtnText}>Jouer</Text>
@@ -159,7 +263,7 @@ export default function HomeScreen() {
                     >
                       <View style={[styles.levelIcon, { backgroundColor: done ? catColor + "20" : colors.secondary, borderColor: done ? catColor : colors.border }]}>
                         <Ionicons
-                          name={done ? "checkmark" : unlocked ? TYPE_ICONS[lvl.type] : "lock-closed-outline"}
+                          name={done ? "checkmark" : unlocked ? "eye-outline" : "lock-closed-outline"}
                           size={13}
                           color={done ? catColor : colors.mutedForeground}
                         />
@@ -169,7 +273,7 @@ export default function HomeScreen() {
                           {lvl.title}
                         </Text>
                         <Text style={[styles.levelMeta, { color: colors.mutedForeground }]}>
-                          {CATEGORY_LABELS[lvl.category]} · {lvl.type.charAt(0).toUpperCase() + lvl.type.slice(1)}
+                          {CATEGORY_LABELS[lvl.category]} · {lvl.psychology.known === "célèbre" ? "★ Classique" : "◆ Méconnu"}
                         </Text>
                       </View>
                       {isCurrent && <View style={[styles.currentDot, { backgroundColor: catColor }]} />}
@@ -188,18 +292,34 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingHorizontal: 20 },
-  inner: { gap: 18 },
+  inner: { gap: 16 },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   brandRow: { gap: 2 },
   brand: { fontSize: 36, fontFamily: "Inter_700Bold", letterSpacing: 4 },
   tagline: { fontSize: 11, fontFamily: "Inter_400Regular", letterSpacing: 3, textTransform: "uppercase" },
-  headerRight: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 4 },
-  customizeBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: "center", justifyContent: "center" },
+  customizeBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: "center", justifyContent: "center", marginTop: 4 },
   colorDot: { width: 16, height: 16, borderRadius: 8 },
-  scoreBadge: { borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6, alignItems: "center" },
-  scoreValue: { fontSize: 18, fontFamily: "Inter_700Bold" },
-  scoreLabel: { fontSize: 9, fontFamily: "Inter_400Regular", textTransform: "uppercase", letterSpacing: 1 },
 
+  // Profile card
+  profileCard: { borderRadius: 20, borderWidth: 1.5, padding: 20, gap: 14 },
+  profileTopRow: { flexDirection: "row", alignItems: "center", gap: 14 },
+  profileEmoji: { fontSize: 40 },
+  profileUnknownLabel: { fontSize: 9, fontFamily: "Inter_700Bold", letterSpacing: 2 },
+  profileName: { fontSize: 22, fontFamily: "Inter_700Bold", lineHeight: 28 },
+  percentileBadge: { borderRadius: 12, borderWidth: 1, padding: 8, alignItems: "center", minWidth: 52 },
+  percentileText: { fontSize: 18, fontFamily: "Inter_700Bold" },
+  percentileSub: { fontSize: 9, fontFamily: "Inter_400Regular", letterSpacing: 1 },
+  profileTagline: { fontSize: 14, fontFamily: "Inter_600SemiBold", fontStyle: "italic", lineHeight: 21 },
+  profileDesc: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 20 },
+  spectrumSection: { borderTopWidth: 1, paddingTop: 14, gap: 8 },
+  spectrumLabel: { fontSize: 9, fontFamily: "Inter_700Bold", letterSpacing: 2 },
+  spectrumLegend: { flexDirection: "row", justifyContent: "space-between" },
+  spectrumLegendText: { fontSize: 10, fontFamily: "Inter_400Regular" },
+  profileContinue: { fontSize: 11, fontFamily: "Inter_500Medium", textAlign: "right" },
+  profileProgress: { borderRadius: 10, padding: 10, alignItems: "center" },
+  profileProgressText: { fontSize: 12, fontFamily: "Inter_500Medium" },
+
+  // Current level banner
   currentBanner: { borderRadius: 20, borderWidth: 1.5, padding: 18, gap: 12 },
   bannerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   bannerLeft: { flex: 1, gap: 4 },
@@ -215,6 +335,7 @@ const styles = StyleSheet.create({
   playBtn: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, paddingHorizontal: 18, paddingVertical: 10 },
   playBtnText: { color: "#fff", fontSize: 14, fontFamily: "Inter_600SemiBold" },
 
+  // Chapters
   chapter: { borderRadius: 16, borderWidth: 1, overflow: "hidden" },
   chapterHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, paddingBottom: 10 },
   chapterNum: { fontSize: 9, fontFamily: "Inter_700Bold", letterSpacing: 2 },
