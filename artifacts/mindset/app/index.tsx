@@ -11,11 +11,7 @@ import { CATEGORY_COLORS, CATEGORY_LABELS, CHAPTERS, LEVELS } from "@/data/level
 import { useColors } from "@/hooks/useColors";
 
 const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  sequence: "grid-outline",
-  quiz: "help-circle-outline",
-  memory: "copy-outline",
   reflection: "eye-outline",
-  pattern: "analytics-outline",
 };
 
 export default function HomeScreen() {

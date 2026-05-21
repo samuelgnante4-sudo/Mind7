@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Speech from "expo-speech";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -14,61 +15,10 @@ import { useTheme } from "@/context/ThemeContext";
 import { CATEGORY_COLORS, CATEGORY_LABELS, Level } from "@/data/levels";
 import { useColors } from "@/hooks/useColors";
 
-const TYPE_LABELS: Record<string, string> = {
-  reflection: "Dilemme moral",
-  quiz: "Question",
-  memory: "Mémoire",
-  sequence: "Séquence",
-  pattern: "Logique",
-};
-
-const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  reflection: "eye-outline",
-  quiz: "help-circle-outline",
-  memory: "copy-outline",
-  sequence: "grid-outline",
-  pattern: "analytics-outline",
-};
-
 function getIntroLines(level: Level): string[] {
-  switch (level.type) {
-    case "reflection":
-      return [
-        "Un dilemme t'attend...",
-        "Il n'y a pas de bonne réponse.",
-        "Seulement la tienne.",
-      ];
-    case "quiz":
-      if (level.category === "corps")
-        return ["Ton corps te réserve", "des secrets étonnants.", "Prêt à découvrir ?"];
-      if (level.category === "histoire")
-        return ["L'Histoire ne ment jamais.", "Mais elle surprend toujours."];
-      if (level.category === "science")
-        return ["La science est formelle.", "Sauras-tu répondre ?"];
-      if (level.category === "nature")
-        return ["La nature est fascinante.", "Elle te met au défi."];
-      return ["Une question t'attend.", "Montre ce que tu sais."];
-    case "sequence":
-      return [
-        "Observe attentivement.",
-        "Mémorise chaque lumière.",
-        "Puis reproduis.",
-      ];
-    case "memory":
-      return [
-        "Les paires sont cachées.",
-        "Ta mémoire est ton arme.",
-        "Trouve-les toutes.",
-      ];
-    case "pattern":
-      return [
-        "Une suite logique...",
-        "Cherche le schéma caché.",
-        "Quelle est la prochaine ?",
-      ];
-    default:
-      return ["Prêt pour le prochain défi ?"];
-  }
+  const t = level as any;
+  if (t.speechText) return [t.speechText];
+  return ["Réfléchis bien.", "Il n'y a pas de bonne réponse. Seulement la tienne."];
 }
 
 interface Props {
@@ -76,7 +26,7 @@ interface Props {
   onStart: () => void;
 }
 
-const AUTO_ADVANCE_MS = 4200;
+const AUTO_ADVANCE_MS = 5500;
 
 export default function LevelIntro({ level, onStart }: Props) {
   const colors = useColors();
@@ -84,67 +34,72 @@ export default function LevelIntro({ level, onStart }: Props) {
   const catColor = CATEGORY_COLORS[level.category];
   const introLines = getIntroLines(level);
 
-  // Animation values
   const bgOpacity = useRef(new Animated.Value(0)).current;
-  const characterY = useRef(new Animated.Value(60)).current;
+  const characterY = useRef(new Animated.Value(80)).current;
+  const characterScale = useRef(new Animated.Value(0.5)).current;
   const characterOpacity = useRef(new Animated.Value(0)).current;
-  const cardScale = useRef(new Animated.Value(0.85)).current;
+  const cardScale = useRef(new Animated.Value(0.88)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
   const bubbleOpacity = useRef(new Animated.Value(0)).current;
+  const bubbleScale = useRef(new Animated.Value(0.92)).current;
   const skipOpacity = useRef(new Animated.Value(0)).current;
   const progressWidth = useRef(new Animated.Value(0)).current;
 
   const [mascotState, setMascotState] = useState<MascotState>("idle");
-  const [lineIndex, setLineIndex] = useState(0);
   const [displayedText, setDisplayedText] = useState("");
   const [done, setDone] = useState(false);
+  const speechRef = useRef(false);
 
-  const lines = introLines;
-  const currentLine = lines[lineIndex] ?? "";
+  const fullText = introLines.join(" ");
 
-  // Typewriter effect
+  // Typewriter
   useEffect(() => {
     setDisplayedText("");
     let i = 0;
     const interval = setInterval(() => {
       i++;
-      setDisplayedText(currentLine.slice(0, i));
-      if (i >= currentLine.length) clearInterval(interval);
-    }, 40);
+      setDisplayedText(fullText.slice(0, i));
+      if (i >= fullText.length) clearInterval(interval);
+    }, 38);
     return () => clearInterval(interval);
-  }, [lineIndex, currentLine]);
+  }, [fullText]);
 
-  // Advance lines
-  useEffect(() => {
-    if (displayedText.length < currentLine.length) return;
-    const delay = lineIndex < lines.length - 1 ? 900 : 99999;
-    const t = setTimeout(() => {
-      if (lineIndex < lines.length - 1) {
-        setLineIndex((i) => i + 1);
-      }
-    }, delay);
-    return () => clearTimeout(t);
-  }, [displayedText, currentLine, lineIndex, lines.length]);
+  // Text-to-speech — dove reads the text aloud
+  const speakText = useCallback(() => {
+    if (speechRef.current) return;
+    speechRef.current = true;
+    Speech.stop();
+    Speech.speak(fullText, {
+      language: "fr-FR",
+      pitch: 1.05,
+      rate: 0.88,
+    });
+  }, [fullText]);
 
-  // Entry animation sequence
+  // Entry animation
   useEffect(() => {
     Animated.sequence([
-      Animated.timing(bgOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.timing(bgOpacity, { toValue: 1, duration: 280, useNativeDriver: true }),
       Animated.parallel([
-        Animated.spring(characterY, { toValue: 0, friction: 6, tension: 80, useNativeDriver: true }),
-        Animated.timing(characterOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
+        Animated.spring(characterY, { toValue: 0, friction: 6, tension: 70, useNativeDriver: true }),
+        Animated.spring(characterScale, { toValue: 1, friction: 6, tension: 70, useNativeDriver: true }),
+        Animated.timing(characterOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
       ]),
       Animated.parallel([
-        Animated.spring(cardScale, { toValue: 1, friction: 6, tension: 100, useNativeDriver: true }),
+        Animated.spring(cardScale, { toValue: 1, friction: 7, tension: 100, useNativeDriver: true }),
         Animated.timing(cardOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
       ]),
-      Animated.timing(bubbleOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
-      Animated.timing(skipOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.parallel([
+        Animated.spring(bubbleScale, { toValue: 1, friction: 6, tension: 100, useNativeDriver: true }),
+        Animated.timing(bubbleOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
+      ]),
+      Animated.timing(skipOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
     ]).start(() => {
       setMascotState("explaining");
+      speakText();
     });
 
-    // Progress bar
+    // Progress bar for auto-advance
     Animated.timing(progressWidth, {
       toValue: 1,
       duration: AUTO_ADVANCE_MS,
@@ -152,23 +107,34 @@ export default function LevelIntro({ level, onStart }: Props) {
     }).start(({ finished }) => {
       if (finished) handleStart();
     });
+
+    return () => {
+      Speech.stop();
+    };
   }, []);
 
   const handleStart = useCallback(() => {
     if (done) return;
     setDone(true);
+    Speech.stop();
     setMascotState("celebrating");
     Animated.parallel([
-      Animated.timing(bgOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
-      Animated.timing(cardOpacity, { toValue: 0, duration: 250, useNativeDriver: true }),
-      Animated.timing(characterOpacity, { toValue: 0, duration: 250, useNativeDriver: true }),
+      Animated.timing(bgOpacity, { toValue: 0, duration: 280, useNativeDriver: true }),
+      Animated.timing(cardOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
+      Animated.timing(characterOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
+      Animated.timing(bubbleOpacity, { toValue: 0, duration: 180, useNativeDriver: true }),
     ]).start(onStart);
   }, [done, onStart]);
 
+  const known = (level as any).psychology?.known;
+
   return (
-    <Animated.View style={[styles.overlay, { opacity: bgOpacity, backgroundColor: colors.background }]}>
-      {/* Top accent bar */}
-      <View style={[styles.topAccent, { backgroundColor: catColor + "22" }]}>
+    <Animated.View
+      style={[styles.overlay, { opacity: bgOpacity, backgroundColor: colors.background }]}
+      pointerEvents="box-none"
+    >
+      {/* Progress bar at top */}
+      <View style={[styles.topBar, { backgroundColor: catColor + "15" }]}>
         <View style={[styles.progressTrack, { backgroundColor: colors.secondary }]}>
           <Animated.View
             style={[
@@ -185,41 +151,55 @@ export default function LevelIntro({ level, onStart }: Props) {
         </View>
       </View>
 
-      {/* Level meta */}
-      <Animated.View style={[styles.metaRow, { opacity: cardOpacity, transform: [{ scale: cardScale }] }]}>
-        <View style={[styles.typePill, { backgroundColor: catColor + "20" }]}>
-          <Ionicons name={TYPE_ICONS[level.type]} size={13} color={catColor} />
-          <Text style={[styles.typePillText, { color: catColor }]}>
-            {TYPE_LABELS[level.type]}
-          </Text>
+      {/* Pills row */}
+      <Animated.View
+        style={[styles.pillRow, { opacity: cardOpacity, transform: [{ scale: cardScale }] }]}
+      >
+        <View style={[styles.pill, { backgroundColor: catColor + "22" }]}>
+          <Ionicons name="eye-outline" size={12} color={catColor} />
+          <Text style={[styles.pillText, { color: catColor }]}>Réflexion</Text>
         </View>
-        <View style={[styles.catPill, { backgroundColor: colors.secondary }]}>
-          <Text style={[styles.catPillText, { color: colors.mutedForeground }]}>
+        <View style={[styles.pill, { backgroundColor: colors.secondary }]}>
+          <Text style={[styles.pillText, { color: colors.mutedForeground }]}>
             {CATEGORY_LABELS[level.category]}
           </Text>
         </View>
+        {known && (
+          <View
+            style={[
+              styles.pill,
+              { backgroundColor: known === "célèbre" ? "#38a16922" : "#e05c7a22" },
+            ]}
+          >
+            <Text
+              style={[
+                styles.pillText,
+                { color: known === "célèbre" ? "#38a169" : "#e05c7a" },
+              ]}
+            >
+              {known === "célèbre" ? "★ Classique" : "◆ Méconnu"}
+            </Text>
+          </View>
+        )}
       </Animated.View>
 
-      {/* Title */}
+      {/* Level title */}
       <Animated.Text
-        style={[styles.levelTitle, { color: colors.foreground, opacity: cardOpacity }]}
+        style={[styles.title, { color: colors.foreground, opacity: cardOpacity }]}
         numberOfLines={2}
       >
         {level.title}
       </Animated.Text>
 
-      {/* Character + speech bubble */}
-      <View style={styles.characterSection}>
+      {/* Dove + speech bubble */}
+      <View style={styles.characterRow}>
         <Animated.View
-          style={[
-            styles.characterWrap,
-            {
-              opacity: characterOpacity,
-              transform: [{ translateY: characterY }],
-            },
-          ]}
+          style={{
+            opacity: characterOpacity,
+            transform: [{ translateY: characterY }, { scale: characterScale }],
+          }}
         >
-          <MascotCharacter state={mascotState} color={primaryColor} size={1.3} />
+          <MascotCharacter state={mascotState} color={primaryColor} size={1.2} />
         </Animated.View>
 
         <Animated.View
@@ -227,35 +207,36 @@ export default function LevelIntro({ level, onStart }: Props) {
             styles.bubble,
             {
               backgroundColor: colors.card,
-              borderColor: primaryColor + "66",
+              borderColor: primaryColor + "77",
               opacity: bubbleOpacity,
+              transform: [{ scale: bubbleScale }],
             },
           ]}
         >
-          {/* Arrow pointing to character */}
           <View style={[styles.bubbleArrow, { borderRightColor: colors.card }]} />
 
-          <Text style={[styles.bubbleLine, { color: colors.foreground }]}>
+          <Text style={[styles.bubbleText, { color: colors.foreground }]}>
             {displayedText}
-            {displayedText.length < currentLine.length && (
-              <Text style={{ color: primaryColor }}>|</Text>
+            {displayedText.length < fullText.length && (
+              <Text style={{ color: primaryColor, fontFamily: "Inter_700Bold" }}>|</Text>
             )}
           </Text>
 
-          {/* Dots for remaining lines */}
-          {lines.length > 1 && (
-            <View style={styles.lineDots}>
-              {lines.map((_, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.lineDot,
-                    { backgroundColor: i <= lineIndex ? primaryColor : colors.secondary },
-                  ]}
-                />
-              ))}
-            </View>
-          )}
+          {/* Speaker icon — taps to replay voice */}
+          <Pressable
+            onPress={() => {
+              Speech.stop();
+              speechRef.current = false;
+              speakText();
+            }}
+            hitSlop={10}
+            style={({ pressed }) => [
+              styles.speakerBtn,
+              { backgroundColor: primaryColor + "22", opacity: pressed ? 0.6 : 1 },
+            ]}
+          >
+            <Ionicons name="volume-high-outline" size={15} color={primaryColor} />
+          </Pressable>
         </Animated.View>
       </View>
 
@@ -276,23 +257,18 @@ export default function LevelIntro({ level, onStart }: Props) {
           onPress={handleStart}
           style={({ pressed }) => [
             styles.skipBtn,
-            {
-              borderColor: colors.border,
-              opacity: pressed ? 0.6 : 1,
-            },
+            { borderColor: colors.border, opacity: pressed ? 0.6 : 1 },
           ]}
         >
-          <Text style={[styles.skipText, { color: colors.mutedForeground }]}>
-            Passer
-          </Text>
+          <Text style={[styles.skipText, { color: colors.mutedForeground }]}>Passer →</Text>
         </Pressable>
       </Animated.View>
 
-      {/* Level number */}
+      {/* Level counter */}
       <Animated.Text
-        style={[styles.levelNum, { color: colors.mutedForeground, opacity: cardOpacity }]}
+        style={[styles.levelCounter, { color: colors.mutedForeground, opacity: cardOpacity }]}
       >
-        Niveau {level.id} / 30
+        Niveau {level.id} sur 30
       </Animated.Text>
     </Animated.View>
   );
@@ -304,17 +280,17 @@ const styles = StyleSheet.create({
     zIndex: 10,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 28,
-    gap: 20,
+    paddingHorizontal: 26,
+    gap: 18,
   },
-  topAccent: {
+  topBar: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
-    paddingTop: Platform.OS === "web" ? 67 : 50,
+    paddingTop: Platform.OS === "web" ? 70 : 54,
     paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingBottom: 14,
   },
   progressTrack: {
     height: 4,
@@ -325,94 +301,84 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
   },
-  metaRow: {
+  pillRow: {
     flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
+    gap: 7,
     flexWrap: "wrap",
     justifyContent: "center",
+    alignItems: "center",
   },
-  typePill: {
+  pill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 5,
     borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
   },
-  typePillText: { fontSize: 12, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
-  catPill: {
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  pillText: {
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.5,
   },
-  catPillText: { fontSize: 11, fontFamily: "Inter_500Medium", letterSpacing: 1 },
-  levelTitle: {
-    fontSize: 28,
+  title: {
+    fontSize: 27,
     fontFamily: "Inter_700Bold",
     textAlign: "center",
-    lineHeight: 36,
-    maxWidth: 300,
+    lineHeight: 35,
+    maxWidth: 310,
   },
-  characterSection: {
+  characterRow: {
     flexDirection: "row",
     alignItems: "flex-end",
     gap: 10,
     width: "100%",
   },
-  characterWrap: {
-    alignItems: "center",
-  },
   bubble: {
     flex: 1,
     borderRadius: 18,
-    borderWidth: 1.5,
     borderBottomLeftRadius: 4,
+    borderWidth: 1.5,
     padding: 16,
-    gap: 12,
-    position: "relative",
-    minHeight: 80,
+    gap: 10,
+    minHeight: 90,
     justifyContent: "center",
   },
   bubbleArrow: {
     position: "absolute",
     left: -8,
-    bottom: 16,
+    bottom: 18,
     width: 0,
     height: 0,
     borderTopWidth: 7,
     borderBottomWidth: 7,
-    borderRightWidth: 8,
+    borderRightWidth: 9,
     borderTopColor: "transparent",
     borderBottomColor: "transparent",
   },
-  bubbleLine: {
-    fontSize: 16,
+  bubbleText: {
+    fontSize: 15,
     fontFamily: "Inter_500Medium",
-    lineHeight: 24,
+    lineHeight: 23,
   },
-  lineDots: {
-    flexDirection: "row",
-    gap: 5,
-  },
-  lineDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+  speakerBtn: {
+    alignSelf: "flex-start",
+    borderRadius: 8,
+    padding: 5,
   },
   btnRow: {
     width: "100%",
-    gap: 10,
+    gap: 9,
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 4,
   },
   startBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
+    paddingVertical: 15,
+    paddingHorizontal: 28,
     width: "100%",
     justifyContent: "center",
   },
@@ -423,19 +389,19 @@ const styles = StyleSheet.create({
   },
   skipBtn: {
     borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingVertical: 9,
+    paddingHorizontal: 18,
     borderWidth: 1,
   },
   skipText: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
   },
-  levelNum: {
+  levelCounter: {
     fontSize: 11,
     fontFamily: "Inter_400Regular",
     letterSpacing: 1,
     position: "absolute",
-    bottom: Platform.OS === "web" ? 50 : 40,
+    bottom: Platform.OS === "web" ? 50 : 38,
   },
 });

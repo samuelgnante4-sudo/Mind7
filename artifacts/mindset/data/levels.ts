@@ -1,30 +1,11 @@
-export type LevelType = "sequence" | "quiz" | "memory" | "reflection" | "pattern";
-export type Category = "histoire" | "corps" | "science" | "philosophie" | "nature";
+export type LevelType = "reflection";
+export type Category = "philosophie" | "psychologie" | "morale" | "identite" | "societe" | "existentiel";
 
 interface BaseLevel {
   id: number;
   type: LevelType;
   category: Category;
   title: string;
-}
-
-export interface SequenceLevel extends BaseLevel {
-  type: "sequence";
-  buttons: 4 | 6;
-  length: number;
-}
-
-export interface QuizLevel extends BaseLevel {
-  type: "quiz";
-  question: string;
-  options: string[];
-  correct: number;
-  fact: string;
-}
-
-export interface MemoryLevel extends BaseLevel {
-  type: "memory";
-  pairs: [string, string][];
 }
 
 export interface ReflectionLevel extends BaseLevel {
@@ -35,455 +16,562 @@ export interface ReflectionLevel extends BaseLevel {
   psychology: {
     concept: string;
     explanation: string;
+    known: "célèbre" | "méconnu";
     stats?: { label: string; pct: number }[];
   };
   hasTimer?: boolean;
+  speechText?: string; // text the dove reads aloud on intro
 }
 
-export interface PatternLevel extends BaseLevel {
-  type: "pattern";
-  prompt: string;
-  sequence: string[];
-  options: string[];
-  correct: number;
-  explanation: string;
-}
-
-export type Level =
-  | SequenceLevel
-  | QuizLevel
-  | MemoryLevel
-  | ReflectionLevel
-  | PatternLevel;
+export type Level = ReflectionLevel;
 
 export const LEVELS: Level[] = [
-  // ── CHAPITRE 1 : L'ÉVEIL ──────────────────────────────────────────────────
+  // ── CHAPITRE 1 : Les Grands Dilemmes ──────────────────────────────────────
   {
     id: 1,
     type: "reflection",
     category: "philosophie",
     title: "La mère ou le père",
-    scenario:
-      "Un accident. Tu ne peux sauver qu'une seule personne. C'est ta mère ou ton père. Tu choisis qui ?",
+    scenario: "Un accident. Tu ne peux sauver qu'une seule personne. C'est ta mère ou ton père. Tu choisis qui ?",
     options: ["Ma mère", "Mon père", "Je ne peux pas choisir"],
-    insight:
-      "La majorité des gens choisissent leur mère — non par logique, mais par instinct. Ce choix n'est pas rationnel. Il est neurologique.",
+    insight: "La majorité choisit la mère. Ce n'est pas un manque d'amour pour l'autre — c'est une empreinte neurologique que la science a mesurée.",
     psychology: {
       concept: "Théorie de l'Attachement",
-      explanation:
-        "John Bowlby a démontré que le premier lien de sécurité d'un enfant — souvent la mère — crée une empreinte neurologique permanente. Sous pression extrême, le cerveau ne raisonne pas : il revient à ce premier ancrage. Ce n'est pas un manque d'amour pour l'autre. C'est la trace que laisse la survie.",
-      stats: [
-        { label: "Choisissent leur mère", pct: 68 },
-        { label: "Choisissent leur père", pct: 18 },
-        { label: "Refusent de choisir", pct: 14 },
-      ],
+      explanation: "John Bowlby (1969). Le premier lien de sécurité d'un enfant crée une empreinte permanente dans l'amygdale. Sous pression extrême, le cerveau ne raisonne pas — il revient au premier ancrage. Ce n'est pas un choix moral. C'est biologique.",
+      known: "célèbre",
+      stats: [{ label: "Choisissent la mère", pct: 68 }, { label: "Choisissent le père", pct: 18 }, { label: "Refusent de choisir", pct: 14 }],
     },
     hasTimer: true,
+    speechText: "Un accident. Tu dois choisir entre ta mère et ton père. Un seul.",
   },
   {
     id: 2,
-    type: "quiz",
-    category: "corps",
-    title: "L'architecture intérieure",
-    question: "Combien d'os possède un adulte humain ?",
-    options: ["206", "300", "175", "250"],
-    correct: 0,
-    fact: "Un bébé naît avec environ 270 os. Certains fusionnent avec l'âge pour arriver à 206 chez l'adulte.",
+    type: "reflection",
+    category: "philosophie",
+    title: "Le tramway",
+    scenario: "Un tramway fonce vers 5 personnes attachées. Tu peux appuyer sur un levier pour le dévier — mais il tuera 1 personne innocente. Tu appuies ?",
+    options: ["Oui, j'appuie", "Non, je n'interviens pas", "Je ne sais pas"],
+    insight: "85% appuient. Mais si on te demande de pousser physiquement quelqu'un pour sauver 5 personnes, presque tout le monde refuse. Même résultat — ressenti totalement différent.",
+    psychology: {
+      concept: "Problème du Tramway & Aversion à l'Action Directe",
+      explanation: "Judith Jarvis Thomson (1976). Tuer via un levier active le cortex préfrontal (calcul logique). Pousser quelqu'un de ses mains active l'amygdale (dégoût moral). Le cerveau traite l'action indirecte et directe comme deux actes moralement différents — même si le bilan est identique.",
+      known: "célèbre",
+      stats: [{ label: "Appuient sur le levier", pct: 85 }, { label: "N'interviennent pas", pct: 9 }, { label: "Hésitent", pct: 6 }],
+    },
+    hasTimer: true,
+    speechText: "Un tramway fonce vers cinq personnes. Tu peux en dévier. Mais ça en tuera une autre.",
   },
   {
     id: 3,
-    type: "sequence",
-    category: "science",
-    title: "La mémoire des machines",
-    buttons: 4,
-    length: 3,
+    type: "reflection",
+    category: "morale",
+    title: "L'enfant qui se noie",
+    scenario: "Tu passes devant un étang peu profond. Un enfant y est en train de se noyer. Tu peux le sauver facilement — mais tu porteras des vêtements neufs à 300€ qui seront ruinés. Tu t'arrêtes ?",
+    options: ["Oui, je sauve l'enfant", "Non, je continue", "J'appelle quelqu'un d'autre"],
+    insight: "Presque tout le monde dit oui. Mais Peter Singer pose ensuite : pourquoi ne donnes-tu pas ces 300€ à une organisation qui sauve des enfants qui meurent de faim ? Le résultat est identique. Pourtant, presque personne ne le fait.",
+    psychology: {
+      concept: "Paradoxe de Singer & Distance Psychologique",
+      explanation: "Peter Singer (1972). Notre cerveau accorde une valeur morale radicalement différente à une menace visible et immédiate vs une menace abstraite et lointaine. L'enfant devant toi crée une réponse émotionnelle immédiate. L'enfant à 5000 km reste statistique. La distance physique diminue l'empathie — même si la vie a la même valeur.",
+      known: "célèbre",
+      stats: [{ label: "Sauvent l'enfant", pct: 98 }, { label: "Donnent l'équivalent à une ONG", pct: 3 }],
+    },
+    hasTimer: false,
+    speechText: "Un enfant se noie. Tu peux le sauver. Mais tes vêtements neufs seront ruinés.",
   },
   {
     id: 4,
-    type: "pattern",
-    category: "science",
-    title: "La suite de Fibonacci",
-    prompt: "1 · 1 · 2 · 3 · 5 · 8 · ?",
-    sequence: ["1", "1", "2", "3", "5", "8", "?"],
-    options: ["11", "13", "15", "12"],
-    correct: 1,
-    explanation:
-      "13. Chaque nombre est la somme des deux précédents. Cette suite apparaît dans la nature : coquillages, fleurs, galaxies.",
+    type: "reflection",
+    category: "philosophie",
+    title: "Le violoniste",
+    scenario: "Tu te réveilles branché à un célèbre violoniste inconscient. Les médecins te disent : si tu te débrachez, il mourra. Mais tu dois rester branché 9 mois. Tu restes ?",
+    options: ["Je reste branché", "Je me débranche", "Je demande un accord"],
+    insight: "Judith Jarvis Thomson a créé ce dilemme pour parler de l'avortement — le droit à la vie vs l'autonomie corporelle. Même si quelqu'un a droit à la vie, a-t-il le droit d'utiliser ton corps sans ton consentement ?",
+    psychology: {
+      concept: "Autonomie Corporelle vs Droit à la Vie",
+      explanation: "Judith Jarvis Thomson (1971). Ce dilemme montre que le droit à la vie ne donne pas automatiquement le droit d'utiliser le corps d'autrui. Ce n'est pas une question de valeur de la vie — c'est une question de qui décide de son propre corps. La plupart des gens qui se débranchent ne se sentent pas meurtriers. Et pourtant.",
+      known: "célèbre",
+      stats: [{ label: "Restent branchés", pct: 34 }, { label: "Se débranchent", pct: 51 }, { label: "Cherchent un accord", pct: 15 }],
+    },
+    hasTimer: false,
+    speechText: "Tu te réveilles branché à un violoniste. Si tu te débrachez, il meurt. Tu restes neuf mois ?",
   },
   {
     id: 5,
-    type: "quiz",
-    category: "histoire",
-    title: "Le tournant de l'Histoire",
-    question: "En quelle année la Révolution Française a-t-elle commencé ?",
-    options: ["1789", "1776", "1804", "1815"],
-    correct: 0,
-    fact: "Le 14 juillet 1789, la prise de la Bastille marqua le début d'une révolution qui changea le monde entier.",
+    type: "reflection",
+    category: "morale",
+    title: "Le dilemme d'Heinz",
+    scenario: "Ta femme va mourir sans un médicament. Le pharmacien le vend 2000€, tu n'as que 1000€. Il refuse de te le vendre moins cher. Tu le voles ?",
+    options: ["Je vole le médicament", "Je ne vole pas", "Je cherche une autre solution"],
+    insight: "Lawrence Kohlberg a utilisé ce dilemme pour mesurer le développement moral. Il n'existe pas de 'bonne' réponse — seulement différents niveaux de raisonnement moral. La question n'est pas quoi choisir, mais pourquoi.",
+    psychology: {
+      concept: "Stades du Développement Moral de Kohlberg",
+      explanation: "Lawrence Kohlberg (1958). Stade 1 (enfant) : ne pas voler pour éviter la punition. Stade 3 : ne pas voler pour ne pas décevoir. Stade 5 : voler car la vie prime la propriété. Stade 6 : décider selon des principes universels de justice. La plupart des adultes raisonnent au stade 3 ou 4.",
+      known: "célèbre",
+      stats: [{ label: "Volent le médicament", pct: 74 }, { label: "Ne volent pas", pct: 14 }, { label: "Cherchent une autre voie", pct: 12 }],
+    },
+    hasTimer: false,
+    speechText: "Ta femme mourra sans un médicament que tu n'as pas les moyens d'acheter. Tu le voles ?",
   },
 
-  // ── CHAPITRE 2 : LE CORPS ─────────────────────────────────────────────────
+  // ── CHAPITRE 2 : Corps & Esprit ───────────────────────────────────────────
   {
     id: 6,
-    type: "memory",
-    category: "corps",
-    title: "Organes & fonctions",
-    pairs: [
-      ["Foie", "Détoxification"],
-      ["Rein", "Filtration"],
-      ["Poumon", "Respiration"],
-      ["Pancréas", "Insuline"],
-    ],
+    type: "reflection",
+    category: "philosophie",
+    title: "La machine à bonheur",
+    scenario: "On te branche à une machine. À l'intérieur : une vie parfaite, du bonheur constant, tout semble réel. Tu ne sauras jamais que c'est faux. Tu entres ?",
+    options: ["J'entre dans la machine", "Je reste dans la réalité", "Je ne suis pas sûr"],
+    insight: "78% refusent. Mais pourquoi ? Si le bonheur est identique... qu'est-ce qu'on protège en refusant ? Ta réponse révèle ce que tu values vraiment dans une vie.",
+    psychology: {
+      concept: "Argument de la Machine à Expériences (Nozick)",
+      explanation: "Robert Nozick (1974). Cet argument prouve que les humains ne veulent pas seulement du bonheur subjectif — ils veulent que ce bonheur soit réel. Ceux qui refusent la machine accordent de la valeur à l'authenticité, au lien véritable, à l'action dans le monde. C'est une réfutation expérimentale de l'hédonisme pur.",
+      known: "célèbre",
+      stats: [{ label: "Refusent la machine", pct: 78 }, { label: "Entrent dans la machine", pct: 14 }, { label: "Hésitent", pct: 8 }],
+    },
+    hasTimer: false,
+    speechText: "Et si tu pouvais vivre dans une simulation parfaite de bonheur, sans jamais le savoir. Tu entres ?",
   },
   {
     id: 7,
     type: "reflection",
     category: "philosophie",
-    title: "Le tramway",
-    scenario:
-      "Un tramway sans frein fonce vers 5 personnes attachées. Tu peux appuyer sur un levier pour le dévier — mais il tuera alors 1 personne innocente sur l'autre voie. Tu appuies ?",
-    options: ["Oui, j'appuie", "Non, je n'interviens pas", "Je ne sais pas"],
-    insight:
-      "La plupart des gens appuient. Mais si on leur demande de pousser physiquement quelqu'un sur la voie pour sauver 5 personnes... ils refusent. Même résultat, même logique — mais ressenti totalement différent.",
+    title: "Le bateau de Thésée",
+    scenario: "Un bateau légendaire est conservé dans un musée. On remplace chaque planche pourrie par une neuve. Quand tout a été remplacé — est-ce encore le même bateau ?",
+    options: ["Oui, c'est le même", "Non, c'est un autre", "C'est une question sans réponse"],
+    insight: "Ce dilemme s'applique à toi : ton corps remplace 90% de ses cellules en 10 ans. Tes neurones changent constamment. Es-tu la même personne qu'à 7 ans ?",
     psychology: {
-      concept: "Le Problème du Tramway",
-      explanation:
-        "Philosophe Judith Jarvis Thomson (1976). Tuer par action directe active notre amygdale — la zone de peur et de dégoût. Tuer via un levier active le cortex préfrontal (calcul logique). Notre cerveau traite 'pousser quelqu'un' et 'appuyer sur un bouton' comme deux actes moralement différents, même si le résultat est identique. C'est ce qu'on appelle l'aversion à l'action directe.",
-      stats: [
-        { label: "Appuient sur le levier", pct: 85 },
-        { label: "Refusent d'intervenir", pct: 9 },
-        { label: "Hésitent", pct: 6 },
-      ],
+      concept: "Paradoxe de l'Identité & Continuité du Moi",
+      explanation: "Plutarque (Ier siècle). En psychologie, ce paradoxe éclaire la question du moi : qu'est-ce qui définit l'identité quand la matière change ? John Locke répondait : la mémoire. Derek Parfit répondait : rien de fixe — l'identité est une illusion narrative. L'identité est peut-être simplement l'histoire qu'on se raconte.",
+      known: "célèbre",
+      stats: [{ label: "Oui, c'est le même bateau", pct: 42 }, { label: "Non, c'est un autre", pct: 35 }, { label: "Question sans réponse", pct: 23 }],
     },
-    hasTimer: true,
+    hasTimer: false,
+    speechText: "Si on remplace chaque planche d'un bateau, est-ce encore le même bateau ? Et toi ?",
   },
   {
     id: 8,
-    type: "quiz",
-    category: "corps",
-    title: "Le muscle oublié",
-    question: "Quel est le plus grand muscle du corps humain ?",
-    options: ["Grand fessier", "Quadriceps", "Grand dorsal", "Biceps"],
-    correct: 0,
-    fact: "Le grand fessier (fesse) est le plus grand et puissant muscle. Il nous permet de courir, monter des escaliers et rester debout.",
+    type: "reflection",
+    category: "psychologie",
+    title: "La transplantation",
+    scenario: "Un chirurgien peut tuer un patient sain pour prélever ses organes et sauver 5 malades. Médicalement, c'est possible. Le chirurgien devrait-il le faire ?",
+    options: ["Oui, 5 vies > 1 vie", "Non, c'est un meurtre", "C'est impossible à décider"],
+    insight: "Presque tout le monde dit non — même ceux qui ont appuyé sur le levier du tramway. Le résultat arithmétique est identique : 5 sauvés, 1 mort. Mais quelque chose cloche profondément.",
+    psychology: {
+      concept: "Problème de la Transplantation & Limites de l'Utilitarisme",
+      explanation: "Judith Jarvis Thomson (1985). Ce cas montre les limites du pur raisonnement utilitariste. Tuer directement un innocent — même pour de bonnes raisons — transgresse un principe moral fondamental. Le philosophe Bernard Williams appelle ça 'l'intégrité morale' : certains actes nous définissent comme personnes, indépendamment des conséquences.",
+      known: "méconnu",
+      stats: [{ label: "Non, c'est un meurtre", pct: 91 }, { label: "Oui, 5 vies valent plus", pct: 7 }, { label: "Impossible à décider", pct: 2 }],
+    },
+    hasTimer: true,
+    speechText: "Un chirurgien peut tuer un patient pour en sauver cinq. C'est mathématiquement logique. Mais...",
   },
   {
     id: 9,
-    type: "sequence",
-    category: "science",
-    title: "Rythme et mémoire",
-    buttons: 4,
-    length: 4,
+    type: "reflection",
+    category: "psychologie",
+    title: "La mémoire effacée",
+    scenario: "Tu peux effacer le souvenir le plus douloureux de ta vie. Cette expérience t'a construit. Tu effaces ?",
+    options: ["J'efface le souvenir", "Je garde le souvenir", "Je réfléchis encore"],
+    insight: "Ceux qui effacent cherchent la paix. Ceux qui gardent pensent que la douleur les a forgés. Les deux ont raison. Les deux ont tort.",
+    psychology: {
+      concept: "Identité Narrative & Continuité Psychologique",
+      explanation: "Paul Ricoeur (1985) + expériences sur la mémoire reconstituée. Elizabeth Loftus a prouvé que nos souvenirs sont déjà falsifiés — ils changent chaque fois qu'on les rappelle. Ce qu'on croit être 'notre vrai souvenir' est déjà une reconstruction. La vraie question : si tes souvenirs changent, est-ce encore toi ?",
+      known: "méconnu",
+      stats: [{ label: "Efface le souvenir", pct: 41 }, { label: "Garde le souvenir", pct: 49 }, { label: "Hésite", pct: 10 }],
+    },
+    hasTimer: false,
+    speechText: "Et si tu pouvais effacer ton pire souvenir. Cette douleur t'a construit. Tu effaces ?",
   },
   {
     id: 10,
-    type: "pattern",
-    category: "science",
-    title: "Les carrés parfaits",
-    prompt: "1 · 4 · 9 · 16 · 25 · ?",
-    sequence: ["1", "4", "9", "16", "25", "?"],
-    options: ["30", "36", "32", "40"],
-    correct: 1,
-    explanation:
-      "36. Ce sont les carrés : 1²=1, 2²=4, 3²=9... 6²=36. Les grecs anciens les dessinaient littéralement en carrés de pierres.",
+    type: "reflection",
+    category: "philosophie",
+    title: "Le cerveau dans la cuve",
+    scenario: "Comment saurais-tu que tu n'es pas un cerveau dans une cuve, stimulé par un ordinateur pour croire que tu vis une vie normale ?",
+    options: ["Je ne peux pas le savoir", "Ma conscience le prouverait", "Ça n'a aucune importance"],
+    insight: "Descartes a posé une version de cette question en 1641. Il n'a trouvé qu'une seule certitude : 'Je pense, donc je suis.' Mais même ça, certains philosophes le contestent.",
+    psychology: {
+      concept: "Scepticisme Radical & Problème de la Réalité",
+      explanation: "René Descartes (1641), repris par Hilary Putnam (1981). Ce dilemme explore la limite de notre connaissance. Neuroscientifiquement, tout ce que tu 'vis' est déjà une simulation : ton cerveau reçoit des signaux électriques et construit une réalité. Il n'a pas d'accès direct au monde. La réalité que tu vis est déjà une interprétation.",
+      known: "célèbre",
+      stats: [{ label: "Impossible à savoir", pct: 55 }, { label: "Ma conscience le prouverait", pct: 28 }, { label: "Ça n'a pas d'importance", pct: 17 }],
+    },
+    hasTimer: false,
+    speechText: "Comment saurais-tu que tu n'es pas un cerveau dans une cuve en ce moment même ?",
   },
 
-  // ── CHAPITRE 3 : LE TEMPS ─────────────────────────────────────────────────
+  // ── CHAPITRE 3 : La Société ───────────────────────────────────────────────
   {
     id: 11,
-    type: "quiz",
-    category: "corps",
-    title: "L'organe de la pensée",
-    question: "Quelle proportion du cerveau humain utilisons-nous ?",
-    options: ["100%", "10%", "50%", "30%"],
-    correct: 0,
-    fact: "Le mythe du '10%' est faux. L'IRM montre que nous utilisons pratiquement toutes les zones du cerveau, même en dormant.",
+    type: "reflection",
+    category: "societe",
+    title: "L'expérience de Milgram",
+    scenario: "Un scientifique t'ordonne d'administrer des chocs électriques à une personne dans la pièce d'à côté. Elle crie de douleur. Il insiste : 'Continuez, c'est nécessaire.' Tu continues ?",
+    options: ["Je continue sur ordre", "Je refuse et je pars", "J'hésite mais je m'arrête"],
+    insight: "Dans la vraie expérience (1961), 65% des gens ont administré le choc maximum — même en entendant les cris. La plupart étaient des personnes ordinaires, pas des monstres.",
+    psychology: {
+      concept: "Obéissance à l'Autorité — Expérience de Milgram",
+      explanation: "Stanley Milgram (1961). Réalisée après les procès de Nuremberg pour comprendre comment des gens ordinaires avaient participé à des atrocités. La conclusion : la majorité obéit à une autorité perçue comme légitime, même contre ses valeurs. Ce n'est pas de la cruauté — c'est de la conformité. Les nazis ordinaires n'étaient pas des monstres. C'est bien plus effrayant.",
+      known: "célèbre",
+      stats: [{ label: "Continueraient sur ordre", pct: 65 }, { label: "Refuseraient", pct: 25 }, { label: "Hésiteraient", pct: 10 }],
+    },
+    hasTimer: true,
+    speechText: "Une autorité t'ordonne de faire du mal à quelqu'un. Elle insiste. Tu continues ?",
   },
   {
     id: 12,
-    type: "memory",
-    category: "histoire",
-    title: "Inventeurs & inventions",
-    pairs: [
-      ["Fleming", "Pénicilline"],
-      ["Tesla", "Courant alternatif"],
-      ["Gutenberg", "Imprimerie"],
-      ["Darwin", "Évolution"],
-    ],
+    type: "reflection",
+    category: "societe",
+    title: "L'effet du spectateur",
+    scenario: "Tu vois quelqu'un s'évanouir dans la rue. Autour de toi : 50 personnes qui regardent. Personne ne bouge. Tu interviens ?",
+    options: ["J'interviens immédiatement", "J'attends que quelqu'un d'autre agisse", "J'appelle les secours mais je ne m'approche pas"],
+    insight: "Si tu étais seul, tu aurais 70% de chances d'intervenir. Avec 50 témoins, seulement 30%. Plus il y a de témoins — moins tu aideras. Paradoxalement.",
+    psychology: {
+      concept: "Effet du Spectateur (Bystander Effect)",
+      explanation: "John Darley & Bibb Latané (1968), après l'affaire Kitty Genovese (tuée devant 38 témoins). La diffusion de responsabilité : chacun suppose que quelqu'un d'autre va agir. Plus le groupe est grand, plus la responsabilité individuelle se dilue. Solution connue : regarder une personne spécifique dans les yeux et lui dire 'Vous, aidez-moi.'",
+      known: "célèbre",
+      stats: [{ label: "Interviendraient (seul)", pct: 70 }, { label: "Interviendraient (en groupe)", pct: 30 }],
+    },
+    hasTimer: true,
+    speechText: "Quelqu'un s'évanouit. Cinquante personnes regardent. Personne ne bouge. Et toi ?",
   },
   {
     id: 13,
     type: "reflection",
-    category: "philosophie",
+    category: "societe",
     title: "La trahison de l'ami",
-    scenario:
-      "Ton meilleur ami a renversé quelqu'un en voiture. La victime est à l'hôpital mais stable. Personne n'a vu. Ton ami te supplie de te taire. Tu fais quoi ?",
-    options: ["Je me tais pour lui", "Je le force à se dénoncer", "J'appelle moi-même la police", "Je ne sais pas"],
-    insight:
-      "Ce dilemme active simultanément deux systèmes moraux opposés dans ton cerveau. L'un te dit que la loyauté est sacrée. L'autre que la justice prime. La plupart des gens mentent — et souffrent de l'avoir fait.",
+    scenario: "Ton meilleur ami a renversé quelqu'un en voiture. La victime est à l'hôpital. Personne n'a vu. Il te supplie de te taire. Tu fais quoi ?",
+    options: ["Je me tais pour lui", "Je le force à se dénoncer", "J'appelle moi-même la police"],
+    insight: "Peu importe ce que tu choisis, tu vivras avec la tension entre deux valeurs que tu portes également : la loyauté et la justice. Il n'y a pas d'issue propre.",
     psychology: {
       concept: "Dissonance Cognitive",
-      explanation:
-        "Leon Festinger (1957). Quand deux valeurs que tu portes entrent en conflit — ici, loyauté vs justice — ton cerveau ressent une douleur réelle, similaire à une douleur physique (prouvé par IRM). Pour réduire cette tension, tu choisiras l'option qui protège le mieux ton image de toi-même. Les gens loyaux choisissent la loyauté. Les gens 'justes' choisissent la justice. Les deux se croient moralement supérieurs.",
-      stats: [
-        { label: "Se taisent pour l'ami", pct: 44 },
-        { label: "Forcent l'ami à se dénoncer", pct: 31 },
-        { label: "Appellent eux-mêmes la police", pct: 17 },
-        { label: "Ne savent pas", pct: 8 },
-      ],
+      explanation: "Leon Festinger (1957). Quand deux valeurs que tu tiens entrent en conflit, ton cerveau ressent une douleur réelle — mesurable par IRM. Pour la réduire, tu rationaliseras ton choix après coup pour le rendre cohérent avec ton image de toi-même. Les gens loyaux trouvent une raison de garder le secret. Les gens 'justes' trouvent une raison de parler. Les deux se croient dans le vrai.",
+      known: "célèbre",
+      stats: [{ label: "Se taisent pour l'ami", pct: 44 }, { label: "Forcent l'ami à se dénoncer", pct: 31 }, { label: "Appellent eux-mêmes la police", pct: 17 }, { label: "Ne savent pas", pct: 8 }],
     },
     hasTimer: false,
+    speechText: "Ton meilleur ami a renversé quelqu'un. Personne n'a vu. Il te supplie de te taire.",
   },
   {
     id: 14,
-    type: "quiz",
-    category: "nature",
-    title: "Les poumons de la Terre",
-    question: "Combien d'années peut vivre un séquoia géant ?",
-    options: ["500 ans", "1 000 ans", "3 000 ans", "10 000 ans"],
-    correct: 2,
-    fact: "Certains séquoias ont plus de 3 200 ans. Ils ont vu l'essor et la chute d'empires entiers sans bouger.",
+    type: "reflection",
+    category: "psychologie",
+    title: "Le prisonnier",
+    scenario: "Tu es arrêté avec un complice. La police vous sépare. Si tu témoignes contre lui, tu sors libre et il prend 10 ans. Si vous vous taisez tous les deux, vous prenez 2 ans chacun. Que fais-tu ?",
+    options: ["Je témoigne contre lui (je trahis)", "Je me tais (je coopère)", "J'essaie de communiquer avec lui d'abord"],
+    insight: "Si tout le monde raisonne individuellement et rationnellement, tout le monde finit en prison plus longtemps. C'est le paradoxe : la logique individuelle mène au pire résultat collectif.",
+    psychology: {
+      concept: "Le Dilemme du Prisonnier & Théorie des Jeux",
+      explanation: "Merrill Flood & Melvin Dresher (1950). Ce dilemme fondateur de la théorie des jeux montre que la rationalité individuelle peut produire des résultats irrationnels collectivement. C'est la base de l'économie comportementale. Il explique aussi pourquoi les nations s'arment, pourquoi les entreprises se font concurrence au détriment de toutes, et pourquoi la coopération est difficile à maintenir.",
+      known: "célèbre",
+      stats: [{ label: "Trahissent (raisonnement logique)", pct: 58 }, { label: "Coopèrent", pct: 33 }, { label: "Essaient de communiquer", pct: 9 }],
+    },
+    hasTimer: true,
+    speechText: "Tu es arrêté avec un complice. Si tu le trahis, tu es libre. Si vous vous taisez, deux ans chacun.",
   },
   {
     id: 15,
-    type: "sequence",
-    category: "science",
-    title: "Concentration",
-    buttons: 4,
-    length: 5,
+    type: "reflection",
+    category: "morale",
+    title: "Le mensonge bienveillant",
+    scenario: "Ta mère te montre son tableau qu'elle a mis 6 mois à peindre. Il est objectivement raté. Elle attend ton avis avec espoir. Tu dis quoi ?",
+    options: ["Je mens : c'est magnifique", "Je dis la vérité avec douceur", "Je dévie sans répondre directement"],
+    insight: "Kant dirait que mentir est toujours mal — même par amour. Mill dirait que le bien-être de ta mère justifie le mensonge. Qui a raison ? Ni l'un ni l'autre complètement.",
+    psychology: {
+      concept: "Déontologie vs Conséquentialisme",
+      explanation: "Emmanuel Kant (1785) vs John Stuart Mill (1863). Deux grandes théories morales s'affrontent ici. Kant : la vérité est un impératif catégorique — tu dois dire la vérité quelles que soient les conséquences. Mill : ce qui est moral, c'est ce qui maximise le bonheur. La plupart des humains sont naturellement conséquentialistes dans la vie quotidienne et déontologistes en principe.",
+      known: "célèbre",
+      stats: [{ label: "Mentent par amour", pct: 62 }, { label: "Disent la vérité", pct: 24 }, { label: "Dévient la question", pct: 14 }],
+    },
+    hasTimer: false,
+    speechText: "Ta mère a peint un tableau raté. Elle est fière. Elle attend ton avis. Que dis-tu ?",
   },
 
-  // ── CHAPITRE 4 : LA MATIÈRE ───────────────────────────────────────────────
+  // ── CHAPITRE 4 : La Morale ────────────────────────────────────────────────
   {
     id: 16,
-    type: "pattern",
-    category: "science",
-    title: "Les puissances de 2",
-    prompt: "1 · 2 · 4 · 8 · 16 · ?",
-    sequence: ["1", "2", "4", "8", "16", "?"],
-    options: ["24", "30", "32", "20"],
-    correct: 2,
-    explanation:
-      "32. Chaque terme est doublé. Un seul grain de riz doublé 64 fois représente plus que toute la production mondiale.",
+    type: "reflection",
+    category: "morale",
+    title: "Ton enfant ou 10 inconnus",
+    scenario: "Une catastrophe. Tu peux sauver ton enfant (ou la personne que tu aimes le plus) — ou 10 inconnus. Un seul choix.",
+    options: ["Je sauve mon enfant / ma personne", "Je sauve les 10 inconnus", "Je ne peux pas répondre"],
+    insight: "91% sauvent leur proche. Et ressentent immédiatement de la honte de l'avoir répondu si vite. C'est biologiquement inévitable — et les philosophes le savent depuis toujours.",
+    psychology: {
+      concept: "Biais de la Victime Identifiable",
+      explanation: "Paul Slovic (1967). Le cerveau ne traite pas les statistiques comme des personnes réelles. '10 inconnus' génère moins d'émotion qu'un seul visage familier. L'évolution t'a programmé pour protéger tes liens directs — pas pour optimiser les résultats globaux. Ce biais explique pourquoi on donne plus pour sauver un enfant avec une photo que pour des milliers sans nom.",
+      known: "célèbre",
+      stats: [{ label: "Sauvent leur proche", pct: 91 }, { label: "Sauvent les 10 inconnus", pct: 5 }, { label: "Refusent de répondre", pct: 4 }],
+    },
+    hasTimer: true,
+    speechText: "Tu peux sauver ton enfant ou dix inconnus. Un seul choix. Instinctivement.",
   },
   {
     id: 17,
-    type: "quiz",
-    category: "science",
-    title: "La vitesse de la lumière",
-    question: "À quelle vitesse voyage la lumière dans le vide ?",
-    options: ["300 000 km/s", "150 000 km/s", "1 000 000 km/s", "30 000 km/s"],
-    correct: 0,
-    fact: "299 792 km/s. La lumière du Soleil met 8 minutes pour nous atteindre. Des étoiles que tu vois sont mortes depuis des millénaires.",
+    type: "reflection",
+    category: "morale",
+    title: "L'argent malhonnête",
+    scenario: "Un proche décède et te laisse 200 000€ en héritage. Tu découvres ensuite que cet argent vient d'une activité frauduleuse qui a fait des victimes. Tu gardes ?",
+    options: ["Je garde l'argent", "Je donne l'argent aux victimes", "Je garde mais je compense autrement"],
+    insight: "Légalement, tu n'as rien fait de mal. Moralement, la question est ouverte. C'est ce qu'on appelle 'dirty hands' — avoir les mains sales sans être coupable.",
+    psychology: {
+      concept: "Responsabilité Morale sans Culpabilité Légale",
+      explanation: "Concept de 'mains sales' (Bernard Williams, 1973). Il existe une zone entre la culpabilité légale et la responsabilité morale. Psychologiquement, l'argent 'contaminé' active un sentiment de souillure que la raison ne peut pas effacer — même si on n'est pas responsable. Les études montrent que les gens qui gardent l'argent le dépensent différemment, souvent de façon plus impulsive, comme pour s'en débarrasser inconsciemment.",
+      known: "méconnu",
+      stats: [{ label: "Gardent l'argent", pct: 48 }, { label: "Donnent aux victimes", pct: 29 }, { label: "Gardent et compensent", pct: 23 }],
+    },
+    hasTimer: false,
+    speechText: "Tu hérites de deux cent mille euros. Mais l'argent vient d'une escroquerie. Tu gardes ?",
   },
   {
     id: 18,
-    type: "memory",
-    category: "science",
-    title: "Éléments chimiques",
-    pairs: [
-      ["Or", "Au"],
-      ["Fer", "Fe"],
-      ["Sodium", "Na"],
-      ["Plomb", "Pb"],
-    ],
+    type: "reflection",
+    category: "psychologie",
+    title: "La vengeance juste",
+    scenario: "Quelqu'un a détruit la vie d'un de tes proches intentionnellement, sans conséquences légales. Tu as la possibilité de lui faire subir la même chose. Tu agis ?",
+    options: ["Oui, c'est justice", "Non, deux torts ne font pas un droit", "J'en suis incapable mais je comprends"],
+    insight: "La distinction entre vengeance et justice existe depuis Hammurabi. La loi du Talion ('œil pour œil') était à l'origine un progrès moral — elle limitait la vengeance excessive.",
+    psychology: {
+      concept: "Vengeance, Justice Rétributive & Circuit de Récompense",
+      explanation: "Tania Singer & Ernst Fehr (2006). L'IRM montre que punir quelqu'un qui a triché active le striatum ventral — le même circuit que recevoir de l'argent ou manger du chocolat. La vengeance procure un plaisir neurologique réel. Ce n'est pas irrationnel — c'est un mécanisme évolutif pour renforcer les normes sociales. Mais il peut être détourné.",
+      known: "méconnu",
+      stats: [{ label: "Agiraient (vengeance)", pct: 38 }, { label: "N'agiraient pas", pct: 44 }, { label: "Comprendraient mais n'agiraient pas", pct: 18 }],
+    },
+    hasTimer: false,
+    speechText: "Quelqu'un a détruit la vie d'un proche. La loi ne peut rien. Tu peux te venger. Tu agis ?",
   },
   {
     id: 19,
     type: "reflection",
-    category: "philosophie",
-    title: "Ton enfant ou 10 inconnus",
-    scenario:
-      "Une catastrophe. Tu peux sauver ton enfant (ou la personne que tu aimes le plus au monde) — ou 10 inconnus. Un seul choix. Tu fais quoi ?",
-    options: ["Je sauve mon enfant / ma personne", "Je sauve les 10 inconnus", "Je ne peux pas répondre à ça"],
-    insight:
-      "Presque tout le monde sauve son enfant. Et presque tout le monde ressent de la honte d'avoir répondu si vite. Pourtant, c'est biologiquement inévitable — et les philosophes le savent depuis toujours.",
+    category: "morale",
+    title: "1 million contre une vie",
+    scenario: "On t'offre 1 million d'euros. En échange, quelque part dans le monde, une personne inconnue souffrira chaque jour du reste de sa vie. Tu acceptes ?",
+    options: ["Oui, j'accepte", "Non, je refuse", "J'ai besoin d'y réfléchir"],
+    insight: "La plupart refusent quand la question est directe. Mais dans la vie réelle, des milliers de nos achats quotidiens font exactement ça. Et on ne pose jamais la question.",
     psychology: {
-      concept: "Biais de la Victime Identifiable",
-      explanation:
-        "Psychologue Paul Slovic. Notre cerveau n'est pas conçu pour ressentir les statistiques. '10 morts inconnus' active moins d'émotion qu'un seul visage familier. L'évolution t'a programmé pour protéger tes gènes et tes liens — pas pour être utilitariste. Ce biais explique aussi pourquoi on donne plus pour sauver un enfant avec une photo que pour sauver des milliers sans nom.",
-      stats: [
-        { label: "Sauvent leur proche", pct: 91 },
-        { label: "Sauvent les 10 inconnus", pct: 5 },
-        { label: "Refusent de répondre", pct: 4 },
-      ],
+      concept: "Éloignement Psychologique & Distance Morale",
+      explanation: "Yaacov Trope & Nira Liberman (2010). Plus une personne est éloignée — géographiquement, temporellement, relationnellement — moins notre cerveau lui accorde de poids moral. Un ouvrier qui souffre dans une usine à 8 000 km pour fabriquer ton téléphone active dix fois moins d'empathie qu'un voisin. Ce n'est pas de la méchanceté — c'est l'architecture de notre empathie.",
+      known: "célèbre",
+      stats: [{ label: "Refusent le million", pct: 62 }, { label: "Acceptent", pct: 27 }, { label: "Hésitent", pct: 11 }],
     },
-    hasTimer: true,
+    hasTimer: false,
+    speechText: "Un million d'euros t'est offert. En échange, un inconnu souffre pour toujours. Tu acceptes ?",
   },
   {
     id: 20,
-    type: "quiz",
-    category: "histoire",
-    title: "L'Égypte ancienne",
-    question: "Combien de pyramides existent en Égypte ?",
-    options: ["3", "23", "118", "7"],
-    correct: 2,
-    fact: "Il existe environ 118 pyramides en Égypte. Gizeh est la plus célèbre, mais les pharaons en ont construit pendant 2 000 ans.",
+    type: "reflection",
+    category: "morale",
+    title: "Voler pour survivre",
+    scenario: "Tu es sans argent depuis 3 jours. Tes enfants n'ont pas mangé. Le gérant de l'épicerie te tourne le dos. Tu voles de la nourriture ?",
+    options: ["Oui, je vole", "Non, je ne vole pas", "Je demande d'abord"],
+    insight: "La majorité répond 'oui'. Et ressent immédiatement une culpabilité d'avoir dit oui. Ce double mouvement est exactement ce que les chercheurs observent — notre morale est contextuelle, pas absolue.",
+    psychology: {
+      concept: "Relativisme Moral & Hiérarchie des Besoins",
+      explanation: "Abraham Maslow (1943) + Lawrence Kohlberg. Notre système moral a des priorités. La survie prime la propriété — biologiquement et instinctivement. Mais la honte sociale (être perçu comme voleur) envoie un contre-signal puissant. Les personnes qui refusent de voler malgré la faim accordent plus de poids à l'identité sociale qu'à la survie physique. Les deux sont des réponses humaines valides.",
+      known: "célèbre",
+      stats: [{ label: "Voleraient pour survivre", pct: 74 }, { label: "Ne voleraient pas", pct: 14 }, { label: "Demanderaient d'abord", pct: 12 }],
+    },
+    hasTimer: false,
+    speechText: "Tu n'as pas mangé depuis trois jours. Tes enfants non plus. Tu peux voler. Tu le fais ?",
   },
 
-  // ── CHAPITRE 5 : L'IDENTITÉ ───────────────────────────────────────────────
+  // ── CHAPITRE 5 : L'Identité ───────────────────────────────────────────────
   {
     id: 21,
-    type: "sequence",
-    category: "science",
-    title: "6 dimensions",
-    buttons: 6,
-    length: 4,
+    type: "reflection",
+    category: "identite",
+    title: "Tes pensées à voix haute",
+    scenario: "Pendant 60 secondes, chacun autour de toi peut entendre toutes tes pensées à voix haute, sans filtre. Tu acceptes ?",
+    options: ["J'accepte", "Je refuse", "Ça m'est égal"],
+    insight: "La majorité refuse. Ce refus révèle quelque chose : il existe une version de toi que tu ne montres jamais — pas par honte, mais parce que les pensées ne sont pas des actes.",
+    psychology: {
+      concept: "Identité Publique vs Privée & Théorie de la Gestion des Impressions",
+      explanation: "Erving Goffman (1959). Nous jouons en permanence un 'rôle social' — adaptons notre comportement à l'audience. Cette 'façade' n'est pas de l'hypocrisie, c'est une nécessité sociale. Les études montrent que nos pensées privées sont bien plus critiques, sexuelles, agressives et égoïstes que nos comportements — et c'est normal. Les pensées ne définissent pas le caractère. Les actes si.",
+      known: "méconnu",
+      stats: [{ label: "Acceptent", pct: 12 }, { label: "Refusent", pct: 71 }, { label: "Indifférents", pct: 17 }],
+    },
+    hasTimer: false,
+    speechText: "Pendant soixante secondes, tout le monde entend toutes tes pensées. Tu acceptes ?",
   },
   {
     id: 22,
-    type: "pattern",
-    category: "science",
-    title: "La suite des triangulaires",
-    prompt: "1 · 3 · 6 · 10 · 15 · ?",
-    sequence: ["1", "3", "6", "10", "15", "?"],
-    options: ["18", "19", "21", "20"],
-    correct: 2,
-    explanation:
-      "21. On ajoute 2, puis 3, puis 4... Ce sont les nombres triangulaires. Disposés en triangle, ils forment des pyramides parfaites.",
+    type: "reflection",
+    category: "identite",
+    title: "Recommencer à zéro",
+    scenario: "Tu peux tout effacer et recommencer une vie entièrement nouvelle — nouvelle identité, nouveau pays, nouvelles relations. Mais personne dans ta vie actuelle ne saura jamais ce qui t'est arrivé. Tu recommences ?",
+    options: ["Oui, je recommence", "Non, je reste qui je suis", "Ça dépend de ma vie actuelle"],
+    insight: "Ceux qui disent 'oui' souvent ne fuient pas leur vie — ils cherchent une version d'eux-mêmes sans le poids du passé. Mais qui serais-tu sans tes souvenirs ?",
+    psychology: {
+      concept: "Continuité Psychologique & Identité Narrative",
+      explanation: "Derek Parfit (1984). Parfit argumente que notre identité est fondée sur la continuité des souvenirs et de la psychologie — pas sur un 'soi' permanent. Si tu effaces ta mémoire et changes de contexte, est-ce que tu 'recommences' ou est-ce que tu meurs et qu'un autre commence ? Pour Parfit, la question de l'identité personnelle est moins importante qu'on ne le croit — ce qui compte, c'est la continuité de conscience.",
+      known: "méconnu",
+      stats: [{ label: "Recommenceraient à zéro", pct: 44 }, { label: "Resteraient qui ils sont", pct: 37 }, { label: "Ça dépend", pct: 19 }],
+    },
+    hasTimer: false,
+    speechText: "Tu peux tout effacer et recommencer une vie entière. Nouvelle identité. Mais personne ne saura.",
   },
   {
     id: 23,
-    type: "quiz",
-    category: "corps",
-    title: "Le moteur du corps",
-    question: "Combien de fois le cœur bat-il en moyenne par jour ?",
-    options: ["60 000", "100 000", "50 000", "200 000"],
-    correct: 1,
-    fact: "Environ 100 000 fois par jour, 35 millions par an. En une vie, il bat plus de 2,5 milliards de fois sans jamais s'arrêter.",
+    type: "reflection",
+    category: "identite",
+    title: "Le regard des autres",
+    scenario: "On te propose : pendant 1 an, tout ce que tu fais est invisible aux autres — personne ne peut te juger ou te voir. Mais tes propres valeurs restent intactes. Comment vis-tu cette année ?",
+    options: ["Exactement pareil qu'avant", "Je fais des choses que je ne ferais pas normalement", "Je me concentre sur moi-même"],
+    insight: "Si ta réponse change quand tu n'es pas observé, qui es-tu vraiment ? Platon a posé cette question 2400 ans avant toi, avec l'Anneau de Gygès.",
+    psychology: {
+      concept: "Anneau de Gygès & Morale sous Observation",
+      explanation: "Platon, La République (380 av. J.-C.). L'anneau rend invisible — et Platon demande : agirais-tu différemment ? Les études en psychologie sociale montrent que la présence d'un observateur (même fictif, même un simple dessin d'yeux) augmente les comportements prosociaux de 30 à 50%. Notre morale est partiellement sociale — elle dépend du regard. Ce n'est pas de l'hypocrisie. C'est de l'évolution.",
+      known: "célèbre",
+      stats: [{ label: "Vivraient pareil", pct: 31 }, { label: "Feraient des choses différentes", pct: 52 }, { label: "Se concentreraient sur eux", pct: 17 }],
+    },
+    hasTimer: false,
+    speechText: "Pendant un an, personne ne peut te voir ni te juger. Comment vis-tu cette année ?",
   },
   {
     id: 24,
-    type: "memory",
-    category: "philosophie",
-    title: "Philosophes & idées",
-    pairs: [
-      ["Descartes", "Je pense donc je suis"],
-      ["Nietzsche", "Dieu est mort"],
-      ["Platon", "La caverne"],
-      ["Sartre", "L'existence précède l'essence"],
-    ],
+    type: "reflection",
+    category: "identite",
+    title: "L'héritage familial",
+    scenario: "Ta famille a construit pendant des générations une entreprise ou une tradition importante. Elle te demande de la poursuivre. Mais ton vrai désir est ailleurs. Tu choisis quoi ?",
+    options: ["Je poursuis l'héritage familial", "Je suis mon propre chemin", "J'essaie de concilier les deux"],
+    insight: "Ce n'est pas une question de loyauté vs ambition. C'est une question sur ce que tu dois à ceux qui t'ont précédé — et ce qu'ils te doivent.",
+    psychology: {
+      concept: "Autonomie vs Obligation Sociale & Individualisme",
+      explanation: "Harry Triandis (1995). Les cultures collectivistes (Asie, Afrique, Amérique Latine) voient l'obligation familiale comme une valeur positive — une dette d'honneur. Les cultures individualistes (Occident) valorisent l'autonomie personnelle. Ni l'une ni l'autre n'est 'meilleure' — elles produisent des bonheurs différents et des regrets différents. Les études montrent que les gens qui suivent leur famille regrettent rarement leur choix. Idem pour ceux qui choisissent leur voie.",
+      known: "méconnu",
+      stats: [{ label: "Poursuivent l'héritage", pct: 26 }, { label: "Suivent leur propre chemin", pct: 51 }, { label: "Conccilient les deux", pct: 23 }],
+    },
+    hasTimer: false,
+    speechText: "Ta famille compte sur toi pour poursuivre son héritage. Mais ton chemin est ailleurs. Tu choisis quoi ?",
   },
   {
     id: 25,
     type: "reflection",
-    category: "philosophie",
-    title: "1 million contre une vie",
-    scenario:
-      "On t'offre 1 million d'euros maintenant. En échange, quelque part dans le monde, une personne que tu ne connaîtras jamais souffrira chaque jour du reste de sa vie. Tu acceptes ?",
-    options: ["Oui, j'accepte", "Non, je refuse", "J'ai besoin d'y réfléchir"],
-    insight:
-      "La plupart des gens refusent... quand la question est posée directement. Mais dans la vie réelle, des milliers de nos choix quotidiens font exactement ça — et on ne pose pas la question.",
+    category: "identite",
+    title: "La solitude absolue",
+    scenario: "Tu passes 30 jours seul, sans téléphone, sans internet, sans personne. Au bout de 30 jours, comment vas-tu ?",
+    options: ["Je suis apaisé et régénéré", "Je suis perdu sans les autres", "Je me suis découvert différemment", "Je souffre"],
+    insight: "La solitude est un miroir. Ce qu'elle révèle n'est pas le vide — c'est ce qu'on avait rempli pour éviter de se voir.",
     psychology: {
-      concept: "Éloignement Psychologique",
-      explanation:
-        "Chercheur Yaacov Trope. Plus une personne, un événement ou une conséquence est éloignée de nous — dans le temps, l'espace ou la relation — moins notre cerveau y attache de poids moral. Un ouvrier qui souffre dans une usine à 8 000 km pour fabriquer ton téléphone active dix fois moins d'empathie qu'un voisin qui souffre devant toi. Ce n'est pas de la méchanceté — c'est la limite de notre architecture mentale.",
-      stats: [
-        { label: "Refusent le million", pct: 62 },
-        { label: "Acceptent le million", pct: 27 },
-        { label: "Hésitent", pct: 11 },
-      ],
+      concept: "Solitude, Identité & Expériences d'Isolation",
+      explanation: "Christopher Long & James Averill (2003) + études sur l'isolement sensoriel. La solitude non choisie est toxique (augmente la mortalité de 26%). La solitude choisie est régénératrice. Les recherches sur les retraites de silence (vipassana, méditation) montrent qu'après le choc des 3-4 premiers jours, les personnes rapportent une clarté émotionnelle et intellectuelle inhabituellement haute. Blaise Pascal écrivait : 'Tout le malheur des hommes vient d'une seule chose, qui est de ne savoir pas demeurer en repos dans une chambre.'",
+      known: "méconnu",
+      stats: [{ label: "Apaisés", pct: 29 }, { label: "Perdus sans les autres", pct: 38 }, { label: "Découverte de soi", pct: 22 }, { label: "En souffrance", pct: 11 }],
     },
     hasTimer: false,
+    speechText: "Trente jours seul. Sans téléphone. Sans personne. Comment tu vas, à la fin ?",
   },
 
-  // ── CHAPITRE 6 : L'UNIVERS ────────────────────────────────────────────────
+  // ── CHAPITRE 6 : L'Univers ────────────────────────────────────────────────
   {
     id: 26,
-    type: "quiz",
-    category: "science",
-    title: "Le système solaire",
-    question: "Quelle planète possède le plus de lunes connues ?",
-    options: ["Jupiter", "Saturne", "Uranus", "Neptune"],
-    correct: 1,
-    fact: "Saturne a 145 lunes confirmées (2023), dépassant Jupiter. Sa plus grande lune, Titan, possède une atmosphère dense.",
+    type: "reflection",
+    category: "existentiel",
+    title: "La fin du monde",
+    scenario: "Une catastrophe va détruire la Terre dans 1 heure. Tu peux embarquer dans une navette et sauver soit ta famille (5 personnes), soit une sélection de 100 inconnus représentant la diversité de l'humanité. Tu choisis qui ?",
+    options: ["Je sauve ma famille", "Je sauve les 100 inconnus", "Je reste sur Terre avec ma famille"],
+    insight: "La plupart choisissent leur famille. Quelques-uns choisissent les 100. Presque personne ne reste. Pourtant, rester est peut-être la seule réponse cohérente avec 'l'humanité passe avant moi'.",
+    psychology: {
+      concept: "Conflit entre Amour Particulier et Bien Universel",
+      explanation: "Bernard Williams (1976) critique l'utilitarisme sur ce point précis : une théorie morale qui te demande de sacrifier ta famille pour l'humanité est une théorie qui 'a un projet de trop'. L'amour particulier — pour des personnes spécifiques — est constitutif de l'identité humaine. Une morale qui l'ignore est abstraite et invivable.",
+      known: "méconnu",
+      stats: [{ label: "Sauvent leur famille", pct: 72 }, { label: "Sauvent les 100 inconnus", pct: 18 }, { label: "Restent sur Terre", pct: 10 }],
+    },
+    hasTimer: true,
+    speechText: "La Terre est détruite dans une heure. Tu peux sauver ta famille ou cent inconnus. Qui pars ?",
   },
   {
     id: 27,
-    type: "sequence",
-    category: "science",
-    title: "L'ordre dans le chaos",
-    buttons: 6,
-    length: 5,
+    type: "reflection",
+    category: "existentiel",
+    title: "Le libre arbitre",
+    scenario: "Des scientifiques prouvent que chacune de tes décisions a été causée par des neurones qui s'activaient avant même que tu en sois conscient. Ton 'libre arbitre' est une illusion. Cela change quelque chose pour toi ?",
+    options: ["Oui, tout perd son sens", "Non, ça ne change rien", "Je cherche à comprendre ce que ça implique"],
+    insight: "Benjamin Libet a mesuré en 1983 que la décision consciente arrive 350ms APRÈS l'activation neuronale. Ton cerveau décide avant toi. Mais 'toi', c'est peut-être ton cerveau.",
+    psychology: {
+      concept: "Libre Arbitre & Neurosciences — Expérience de Libet",
+      explanation: "Benjamin Libet (1983). L'électroencéphalogramme détecte le 'potentiel de préparation' jusqu'à 550ms avant que le sujet soit conscient de décider de bouger. Cela ne prouve pas l'absence de libre arbitre — mais ça complique la définition. Sam Harris argumente que le libre arbitre est une illusion totale. Daniel Dennett répond que le libre arbitre compatible avec le déterminisme est réel et suffisant. La question reste ouverte.",
+      known: "célèbre",
+      stats: [{ label: "Tout perd son sens", pct: 22 }, { label: "Ça ne change rien", pct: 47 }, { label: "Cherchent à comprendre", pct: 31 }],
+    },
+    hasTimer: false,
+    speechText: "La science prouve que tu n'as pas de libre arbitre. Tes décisions sont prédéterminées. Ça change quoi ?",
   },
   {
     id: 28,
-    type: "pattern",
-    category: "science",
-    title: "Suite mystère",
-    prompt: "3 · 6 · 11 · 18 · 27 · ?",
-    sequence: ["3", "6", "11", "18", "27", "?"],
-    options: ["36", "38", "40", "35"],
-    correct: 1,
-    explanation:
-      "38. On ajoute 3, 5, 7, 9, 11... des nombres impairs croissants. La différence entre les différences est constante : 2.",
+    type: "reflection",
+    category: "existentiel",
+    title: "Après la mort",
+    scenario: "Si tu savais avec certitude qu'il n'y a rien après la mort — pas de conscience, pas d'expérience, juste le néant — est-ce que ça changerait la façon dont tu vis ?",
+    options: ["Oui, je vivrais autrement", "Non, ça ne changerait rien", "Ce serait libérateur"],
+    insight: "Épicure avait une formule : 'Quand la mort est là, je ne suis plus là. Quand je suis là, la mort n'est pas là.' L'un des arguments les plus anciens contre la peur de la mort — et l'un des moins rassurants.",
+    psychology: {
+      concept: "Gestion de la Terreur Mortelle (Terror Management Theory)",
+      explanation: "Jeff Greenberg, Sheldon Solomon & Tom Pyszczynski (1986). La conscience de notre mort est tellement anxiogène que nous construisons des systèmes de sens (religion, héritage, enfants, œuvres) pour la gérer. Quand on rappelle à des gens leur propre mort, ils deviennent plus conservateurs, plus nationalistes et plus défensifs de leurs croyances. La mort structure inconsciemment une grande partie de nos valeurs.",
+      known: "méconnu",
+      stats: [{ label: "Vivraient autrement", pct: 53 }, { label: "Rien ne changerait", pct: 30 }, { label: "Ce serait libérateur", pct: 17 }],
+    },
+    hasTimer: false,
+    speechText: "Et si tu savais avec certitude qu'il n'y a rien après la mort. Juste le néant. Tu vis différemment ?",
   },
   {
     id: 29,
     type: "reflection",
-    category: "philosophie",
-    title: "Voler pour survivre",
-    scenario:
-      "Tu es sans argent depuis 3 jours. Tes enfants n'ont pas mangé. Tu passes devant une épicerie. Le gérant te tourne le dos. Tu voleras de la nourriture ?",
-    options: ["Oui, je vole", "Non, je ne vole pas", "Je demande d'abord"],
-    insight:
-      "La majorité répond 'oui' — et ensuite ressent une culpabilité immédiate d'avoir dit oui. Ce double mouvement est exactement ce que les chercheurs observent : notre morale n'est pas absolue. Elle est contextuelle.",
+    category: "existentiel",
+    title: "Vivre éternellement",
+    scenario: "On te propose de vivre éternellement en parfaite santé — mais tout le monde que tu aimes mourra. Tu acceptes ?",
+    options: ["J'accepte l'éternité", "Je refuse, je veux mourir avec les miens", "Je veux juste vivre un peu plus longtemps"],
+    insight: "Bernard Williams argua en 1973 que l'immortalité serait fatalement ennuyeuse — car ce qui nous rend humains, c'est d'avoir des désirs finis dans un temps fini.",
     psychology: {
-      concept: "Relativisme Moral & Hiérarchie des Besoins",
-      explanation:
-        "Abraham Maslow (1943) + études de Lawrence Kohlberg. Notre système moral a des niveaux. La survie prime la propriété — biologiquement, instinctivement. Mais la honte sociale (être perçu comme voleur) active un contre-signal puissant. Les personnes qui refusent de voler malgré la faim extrême ne sont pas 'plus morales' : elles donnent plus de poids à l'identité sociale qu'à la survie physique. Les deux sont des réponses humaines valides.",
-      stats: [
-        { label: "Voleraient pour survivre", pct: 74 },
-        { label: "Ne voleraient pas", pct: 14 },
-        { label: "Demanderaient d'abord", pct: 12 },
-      ],
+      concept: "Paradoxe de l'Immortalité & Désir",
+      explanation: "Bernard Williams (1973). L'immortalité viderait de sens les projets humains — car un projet n'a de valeur que parce qu'on pourrait ne pas le réaliser. Sans limite de temps, sans risque, sans mort, les désirs perdraient leur urgence. Les études sur le vieillissement montrent paradoxalement que les personnes très âgées ont souvent un sentiment de paix — non pas malgré la proximité de la mort, mais grâce à elle.",
+      known: "méconnu",
+      stats: [{ label: "Acceptent l'éternité", pct: 38 }, { label: "Refusent, veulent mourir avec leurs proches", pct: 41 }, { label: "Veulent juste un peu plus longtemps", pct: 21 }],
     },
     hasTimer: false,
+    speechText: "Vivre éternellement. Mais tout le monde que tu aimes mourra. Tu acceptes l'éternité ?",
   },
   {
     id: 30,
     type: "reflection",
-    category: "philosophie",
-    title: "La machine à bonheur",
-    scenario:
-      "On te propose de brancher ton cerveau à une machine. À l'intérieur : une vie parfaite, du bonheur constant, des souvenirs magnifiques. Tout est faux — mais tu ne le sauras jamais. Tu entres ?",
-    options: ["Oui, j'entre", "Non, je reste dans la réalité", "Je ne suis pas sûr"],
-    insight:
-      "La majorité dit non. Mais pourquoi ? Si le bonheur est identique, si la douleur est absente... qu'est-ce qu'on protège en refusant ? Ce que tu réponds révèle ce que tu values vraiment dans une vie.",
+    category: "existentiel",
+    title: "La dernière question",
+    scenario: "Tu arrives à la fin de ta vie. Tu regardes en arrière. Quelle est la seule chose que tu espères avoir faite ?",
+    options: ["Avoir aimé vraiment", "Avoir laissé une trace", "Avoir vécu librement", "Avoir compris quelque chose"],
+    insight: "Quelle que soit ta réponse, elle est juste. Ce jeu ne te juge pas. Il t'observe. Et maintenant, tu t'es observé toi aussi.",
     psychology: {
-      concept: "Argument de la Machine à Expériences",
-      explanation:
-        "Philosophe Robert Nozick (1974). Cet argument montre que les humains ne veulent pas seulement du bonheur — ils veulent que ce bonheur soit réel. On valorise l'authenticité, le lien véritable, le fait d'agir sur le monde plutôt que de le simuler. Ceux qui refusent la machine croient à un sens objectif de la vie. Ceux qui acceptent croient que la conscience subjective est tout ce qui compte. Ni l'un ni l'autre n'a tort.",
-      stats: [
-        { label: "Refusent la machine", pct: 78 },
-        { label: "Entrent dans la machine", pct: 14 },
-        { label: "Hésitent", pct: 8 },
-      ],
+      concept: "Mémoire de Soi & Regret Anticipé",
+      explanation: "Daniel Kahneman (2011). Notre 'moi mémoriel' juge notre vie différemment du 'moi expérienciel' qui la vit. On sur-estime l'importance des grands moments et sous-estime l'accumulation des petits. Les études sur les regrets en fin de vie (Bronnie Ware, infirmière en soins palliatifs) montrent des patterns constants : les gens regrettent moins ce qu'ils ont fait que ce qu'ils n'ont pas osé faire.",
+      known: "méconnu",
+      stats: [{ label: "Avoir aimé vraiment", pct: 48 }, { label: "Avoir laissé une trace", pct: 19 }, { label: "Avoir vécu librement", pct: 24 }, { label: "Avoir compris quelque chose", pct: 9 }],
     },
     hasTimer: false,
+    speechText: "Tu arrives à la fin de ta vie. Quelle est la seule chose que tu espères avoir faite ?",
   },
 ];
 
 export const CATEGORY_COLORS: Record<Category, string> = {
-  histoire: "#d4a017",
-  corps: "#e05c7a",
-  science: "#4fd1c5",
   philosophie: "#9f7aea",
-  nature: "#68d391",
+  psychologie: "#63b3ed",
+  morale: "#f6ad55",
+  identite: "#e05c7a",
+  societe: "#4fd1c5",
+  existentiel: "#68d391",
 };
 
 export const CATEGORY_LABELS: Record<Category, string> = {
-  histoire: "HISTOIRE",
-  corps: "CORPS HUMAIN",
-  science: "SCIENCE",
   philosophie: "PHILOSOPHIE",
-  nature: "NATURE",
+  psychologie: "PSYCHOLOGIE",
+  morale: "MORALE",
+  identite: "IDENTITÉ",
+  societe: "SOCIÉTÉ",
+  existentiel: "EXISTENTIEL",
 };
 
 export const CHAPTERS = [
-  { id: 1, title: "L'Éveil", levels: [1, 2, 3, 4, 5] },
-  { id: 2, title: "Le Corps", levels: [6, 7, 8, 9, 10] },
-  { id: 3, title: "Le Temps", levels: [11, 12, 13, 14, 15] },
-  { id: 4, title: "La Matière", levels: [16, 17, 18, 19, 20] },
+  { id: 1, title: "Les Grands Dilemmes", levels: [1, 2, 3, 4, 5] },
+  { id: 2, title: "Corps & Esprit", levels: [6, 7, 8, 9, 10] },
+  { id: 3, title: "La Société", levels: [11, 12, 13, 14, 15] },
+  { id: 4, title: "La Morale", levels: [16, 17, 18, 19, 20] },
   { id: 5, title: "L'Identité", levels: [21, 22, 23, 24, 25] },
   { id: 6, title: "L'Univers", levels: [26, 27, 28, 29, 30] },
 ];
