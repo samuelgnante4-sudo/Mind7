@@ -28,7 +28,6 @@ export default defineConfig({
       mode: "split",
       baseUrl: "/api",
       clean: true,
-      prettier: true,
       override: {
         fetch: {
           includeHttpResponseReturnType: false,
