@@ -11,8 +11,10 @@ import {
   View,
 } from "react-native";
 
+import ConceptAnimation from "@/components/ConceptAnimation";
 import MascotCharacter, { MascotState } from "@/components/MascotCharacter";
 import { useTheme } from "@/context/ThemeContext";
+import { LEVEL_ANIM } from "@/data/animations";
 import { ReflectionLevel } from "@/data/levels";
 import { useColors } from "@/hooks/useColors";
 
@@ -279,6 +281,12 @@ export default function ReflectionGame({ level, catColor, onComplete }: Props) {
                 {level.psychology.known === "célèbre" ? "★ Dilemme classique" : "◆ Concept méconnu"}
               </Text>
             </View>
+            {/* Concept animation */}
+            {LEVEL_ANIM[level.id] && (
+              <View style={[styles.animWrap, { backgroundColor: catColor + "08", borderColor: catColor + "22" }]}>
+                <ConceptAnimation type={LEVEL_ANIM[level.id]} color={catColor} />
+              </View>
+            )}
             <Text style={[styles.psychExplain, { color: colors.mutedForeground }]}>{level.psychology.explanation}</Text>
           </Animated.View>
 
@@ -333,6 +341,7 @@ const styles = StyleSheet.create({
   knownText: { fontSize: 11, fontFamily: "Inter_700Bold" },
   psychExplain: { fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 21 },
   speakerBtn: { borderRadius: 10, padding: 8 },
+  animWrap: { borderRadius: 16, borderWidth: 1, overflow: "hidden" },
   continueBtn: { borderRadius: 14, padding: 16, alignItems: "center" },
   continueBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_600SemiBold" },
 });
