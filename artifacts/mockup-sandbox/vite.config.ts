@@ -29,7 +29,7 @@ if (!basePath) {
 
 export default defineConfig({
   base: basePath,
-  plugins: [
+  pluginS: [
     mockupPreviewPlugin(),
     react(),
     tailwindcss(),
