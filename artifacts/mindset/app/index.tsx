@@ -1,60 +1,216 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useRef } from "react";
-import { Animated, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Animated,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import MascotCharacter from "@/components/MascotCharacter";
 import { PSYCH_PROFILES, useGame } from "@/context/GameContext";
 import { useTheme } from "@/context/ThemeContext";
-import { CATEGORY_COLORS, CATEGORY_LABELS, CHAPTERS, LEVELS } from "@/data/levels";
+import {
+  CATEGORY_COLORS,
+  CATEGORY_LABELS,
+  CHAPTERS,
+  LEVELS,
+} from "@/data/levels";
+import { GENERAL_QUOTES, LEVEL_QUOTES } from "@/data/quotes";
 import { useColors } from "@/hooks/useColors";
 
-// Spectrum bar — 7 dots representing the 7 tiers
+// ── Spectrum bar ─────────────────────────────────────────────────────────────
 function ProfileSpectrum({ position, accent }: { position: number; accent: string }) {
   const colors = useColors();
   return (
-    <View style={spectrum.wrap}>
-      <Text style={spectrum.endLabel}>🕳️</Text>
-      <View style={spectrum.track}>
+    <View style={sp.wrap}>
+      <Text style={sp.endLabel}>🕳️</Text>
+      <View style={sp.track}>
         {PSYCH_PROFILES.map((p, i) => {
           const dotPos = i / (PSYCH_PROFILES.length - 1);
           const isActive = Math.abs(dotPos - position) < 0.09;
           return (
             <View
               key={p.id}
-              style={[
-                spectrum.dot,
-                {
-                  backgroundColor: isActive ? accent : colors.secondary,
-                  width: isActive ? 14 : 8,
-                  height: isActive ? 14 : 8,
-                  borderRadius: isActive ? 7 : 4,
-                  borderWidth: isActive ? 2 : 0,
-                  borderColor: isActive ? accent + "55" : "transparent",
-                },
-              ]}
+              style={{
+                width: isActive ? 14 : 8,
+                height: isActive ? 14 : 8,
+                borderRadius: isActive ? 7 : 4,
+                backgroundColor: isActive ? accent : colors.secondary,
+                borderWidth: isActive ? 2 : 0,
+                borderColor: isActive ? accent + "55" : "transparent",
+              }}
             />
           );
         })}
       </View>
-      <Text style={spectrum.endLabel}>🕊️</Text>
+      <Text style={sp.endLabel}>🕊️</Text>
     </View>
   );
 }
-
-const spectrum = StyleSheet.create({
+const sp = StyleSheet.create({
   wrap: { flexDirection: "row", alignItems: "center", gap: 8 },
   track: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  dot: {},
   endLabel: { fontSize: 16 },
 });
 
+// ── Quote card ────────────────────────────────────────────────────────────────
+function QuoteCard({ levelId }: { levelId: number }) {
+  const colors = useColors();
+  const quote = LEVEL_QUOTES[levelId] ?? GENERAL_QUOTES[levelId % GENERAL_QUOTES.length];
+  const level = LEVELS.find((l) => l.id === levelId);
+  const accent = level ? CATEGORY_COLORS[level.category] : colors.mutedForeground;
+
+  return (
+    <View style={[qc.card, { backgroundColor: colors.card, borderColor: accent + "33" }]}>
+      <View style={[qc.accentBar, { backgroundColor: accent }]} />
+      <View style={qc.inner}>
+        <Text style={[qc.openQuote, { color: accent }]}>"</Text>
+        <Text style={[qc.text, { color: colors.secondaryForeground }]}>{quote.text}</Text>
+        <Text style={[qc.attr, { color: colors.mutedForeground }]}>
+          — {quote.author}, {quote.year}
+        </Text>
+      </View>
+    </View>
+  );
+}
+const qc = StyleSheet.create({
+  card: {
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: "row",
+    overflow: "hidden",
+  },
+  accentBar: { width: 3 },
+  inner: { flex: 1, padding: 16, gap: 6 },
+  openQuote: { fontSize: 32, fontFamily: "Inter_700Bold", lineHeight: 28, marginBottom: -4 },
+  text: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 22, fontStyle: "italic" },
+  attr: { fontSize: 12, fontFamily: "Inter_500Medium" },
+});
+
+// ── Chapter badges ────────────────────────────────────────────────────────────
+const CHAPTER_META = [
+  { id: 1, emoji: "⚖️", color: "#9f7aea" },
+  { id: 2, emoji: "🧠", color: "#63b3ed" },
+  { id: 3, emoji: "👥", color: "#4fd1c5" },
+  { id: 4, emoji: "💡", color: "#f6ad55" },
+  { id: 5, emoji: "🪞", color: "#e05c7a" },
+  { id: 6, emoji: "🌌", color: "#68d391" },
+];
+
+function ChapterBadges({
+  isCompleted,
+  isStarted,
+}: {
+  isCompleted: (chapterId: number) => boolean;
+  isStarted: (chapterId: number) => boolean;
+}) {
+  const colors = useColors();
+  return (
+    <View style={cb.row}>
+      {CHAPTER_META.map((ch) => {
+        const done = isCompleted(ch.id);
+        const started = isStarted(ch.id);
+        const chapter = CHAPTERS.find((c) => c.id === ch.id)!;
+        return (
+          <View key={ch.id} style={cb.badgeWrap}>
+            <View
+              style={[
+                cb.badge,
+                done
+                  ? { backgroundColor: ch.color + "22", borderColor: ch.color, borderWidth: 2 }
+                  : started
+                  ? { backgroundColor: colors.card, borderColor: ch.color + "55", borderWidth: 1.5 }
+                  : { backgroundColor: colors.secondary, borderColor: colors.border, borderWidth: 1 },
+              ]}
+            >
+              {/* Glow ring for completed */}
+              {done && (
+                <View style={[cb.glowRing, { borderColor: ch.color + "44" }]} />
+              )}
+              <Text style={[cb.emoji, { opacity: done ? 1 : started ? 0.7 : 0.35 }]}>
+                {done ? ch.emoji : started ? ch.emoji : "🔒"}
+              </Text>
+              {done && (
+                <View style={[cb.checkMark, { backgroundColor: ch.color }]}>
+                  <Ionicons name="checkmark" size={8} color="#fff" />
+                </View>
+              )}
+            </View>
+            <Text
+              style={[
+                cb.badgeLabel,
+                { color: done ? ch.color : started ? colors.secondaryForeground : colors.mutedForeground },
+              ]}
+              numberOfLines={2}
+            >
+              {chapter.title.replace("L'", "L'\u200B")}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+const cb = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 6,
+  },
+  badgeWrap: { alignItems: "center", gap: 6, flex: 1 },
+  badge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  glowRing: {
+    position: "absolute",
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 2,
+  },
+  emoji: { fontSize: 22 },
+  checkMark: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeLabel: {
+    fontSize: 9,
+    fontFamily: "Inter_500Medium",
+    textAlign: "center",
+    lineHeight: 13,
+  },
+});
+
+// ── Home screen ───────────────────────────────────────────────────────────────
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { primaryColor } = useTheme();
-  const { currentLevelId, completedLevels, profile, profileScore, profilePosition, isLevelCompleted, isLevelUnlocked } = useGame();
+  const {
+    currentLevelId,
+    completedLevels,
+    profile,
+    profilePosition,
+    isLevelCompleted,
+    isLevelUnlocked,
+  } = useGame();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -69,115 +225,126 @@ export default function HomeScreen() {
   const currentChapter = CHAPTERS.find((c) => c.levels.includes(currentLevelId));
   const answeredCount = completedLevels.length;
 
+  // Chapter helper functions
+  const isChapterCompleted = (chapterId: number) => {
+    const ch = CHAPTERS.find((c) => c.id === chapterId);
+    if (!ch) return false;
+    return ch.levels.every((id) => isLevelCompleted(id));
+  };
+  const isChapterStarted = (chapterId: number) => {
+    const ch = CHAPTERS.find((c) => c.id === chapterId);
+    if (!ch) return false;
+    return ch.levels.some((id) => isLevelCompleted(id));
+  };
+
   return (
     <ScrollView
-      style={[styles.scroll, { backgroundColor: colors.background }]}
-      contentContainerStyle={[styles.content, { paddingTop: topPad + 20, paddingBottom: botPad + 24 }]}
+      style={[s.scroll, { backgroundColor: colors.background }]}
+      contentContainerStyle={[s.content, { paddingTop: topPad + 20, paddingBottom: botPad + 24 }]}
       showsVerticalScrollIndicator={false}
     >
-      <Animated.View style={[styles.inner, { opacity: fadeAnim }]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.brandRow}>
-            <Text style={[styles.brand, { color: colors.foreground }]}>
+      <Animated.View style={[s.inner, { opacity: fadeAnim }]}>
+
+        {/* ── HEADER ── */}
+        <View style={s.header}>
+          <View style={s.brandRow}>
+            <Text style={[s.brand, { color: colors.foreground }]}>
               MIND<Text style={{ color: primaryColor }}>7</Text>
             </Text>
-            <Text style={[styles.tagline, { color: colors.mutedForeground }]}>7 façons de penser</Text>
+            <Text style={[s.tagline, { color: colors.mutedForeground }]}>7 façons de penser</Text>
           </View>
           <Pressable
             onPress={() => router.push("/customize")}
             style={({ pressed }) => [
-              styles.customizeBtn,
+              s.customizeBtn,
               { backgroundColor: colors.card, borderColor: primaryColor + "55", opacity: pressed ? 0.7 : 1 },
             ]}
           >
-            <View style={[styles.colorDot, { backgroundColor: primaryColor }]} />
+            <View style={[s.colorDot, { backgroundColor: primaryColor }]} />
           </Pressable>
         </View>
 
         {/* ── PSYCHOLOGICAL PROFILE CARD ── */}
         {answeredCount === 0 ? (
-          // Not started yet
-          <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={styles.profileTopRow}>
-              <Text style={styles.profileEmoji}>🔮</Text>
+          <View style={[s.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={s.profileTopRow}>
+              <Text style={s.profileEmoji}>🔮</Text>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.profileUnknownLabel, { color: colors.mutedForeground }]}>TON PROFIL PSYCHOLOGIQUE</Text>
-                <Text style={[styles.profileName, { color: colors.foreground }]}>Inconnu</Text>
+                <Text style={[s.profileUnknownLabel, { color: colors.mutedForeground }]}>
+                  TON PROFIL PSYCHOLOGIQUE
+                </Text>
+                <Text style={[s.profileName, { color: colors.foreground }]}>Inconnu</Text>
               </View>
             </View>
-            <Text style={[styles.profileTagline, { color: colors.mutedForeground }]}>
+            <Text style={[s.profileTagline, { color: colors.mutedForeground }]}>
               Réponds à au moins 1 dilemme pour découvrir ton profil.
             </Text>
-            <View style={[styles.profileProgress, { backgroundColor: colors.secondary }]}>
-              <Text style={[styles.profileProgressText, { color: colors.mutedForeground }]}>
+            <View style={[s.profileProgress, { backgroundColor: colors.secondary }]}>
+              <Text style={[s.profileProgressText, { color: colors.mutedForeground }]}>
                 0 / 30 dilemmes répondus
               </Text>
             </View>
           </View>
         ) : profile ? (
-          // Profile known
           <View
-            style={[
-              styles.profileCard,
-              { backgroundColor: profile.bg, borderColor: profile.accent + "44" },
-            ]}
+            style={[s.profileCard, { backgroundColor: profile.bg, borderColor: profile.accent + "44" }]}
           >
-            <View style={styles.profileTopRow}>
-              <Text style={styles.profileEmoji}>{profile.emoji}</Text>
+            <View style={s.profileTopRow}>
+              <Text style={s.profileEmoji}>{profile.emoji}</Text>
               <View style={{ flex: 1, gap: 3 }}>
-                <Text style={[styles.profileUnknownLabel, { color: profile.accent + "aa" }]}>
+                <Text style={[s.profileUnknownLabel, { color: profile.accent + "aa" }]}>
                   TON PROFIL · {answeredCount} DILEMME{answeredCount > 1 ? "S" : ""}
                 </Text>
-                <Text style={[styles.profileName, { color: profile.accent }]}>
-                  {profile.label}
-                </Text>
+                <Text style={[s.profileName, { color: profile.accent }]}>{profile.label}</Text>
               </View>
-              <View style={[styles.percentileBadge, { backgroundColor: profile.accent + "20", borderColor: profile.accent + "44" }]}>
-                <Text style={[styles.percentileText, { color: profile.accent }]}>
-                  {profile.percentile}
-                </Text>
-                <Text style={[styles.percentileSub, { color: profile.accent + "88" }]}>
-                  pop.
-                </Text>
+              <View
+                style={[
+                  s.percentileBadge,
+                  { backgroundColor: profile.accent + "20", borderColor: profile.accent + "44" },
+                ]}
+              >
+                <Text style={[s.percentileText, { color: profile.accent }]}>{profile.percentile}</Text>
+                <Text style={[s.percentileSub, { color: profile.accent + "88" }]}>pop.</Text>
               </View>
             </View>
 
-            <Text style={[styles.profileTagline, { color: profile.accent }]}>
+            <Text style={[s.profileTagline, { color: profile.accent }]}>
               "{profile.tagline}"
             </Text>
 
-            <Text style={[styles.profileDesc, { color: profile.accent + "cc" }]}>
+            <Text style={[s.profileDesc, { color: profile.accent + "cc" }]}>
               {profile.description}
             </Text>
 
-            {/* Spectrum */}
-            <View style={[styles.spectrumSection, { borderTopColor: profile.accent + "22" }]}>
-              <Text style={[styles.spectrumLabel, { color: profile.accent + "77" }]}>
+            <View style={[s.spectrumSection, { borderTopColor: profile.accent + "22" }]}>
+              <Text style={[s.spectrumLabel, { color: profile.accent + "77" }]}>
                 SPECTRE PSYCHOLOGIQUE
               </Text>
               <ProfileSpectrum position={profilePosition} accent={profile.accent} />
-              <View style={styles.spectrumLegend}>
-                <Text style={[styles.spectrumLegendText, { color: profile.accent + "66" }]}>Psychopathe</Text>
-                <Text style={[styles.spectrumLegendText, { color: profile.accent + "66" }]}>Altruiste pur</Text>
+              <View style={s.spectrumLegend}>
+                <Text style={[s.spectrumLegendText, { color: profile.accent + "66" }]}>Psychopathe</Text>
+                <Text style={[s.spectrumLegendText, { color: profile.accent + "66" }]}>Altruiste pur</Text>
               </View>
             </View>
 
-            {/* Progress toward next tier */}
             {answeredCount < 30 && (
-              <Text style={[styles.profileContinue, { color: profile.accent + "77" }]}>
-                {30 - answeredCount} dilemme{30 - answeredCount > 1 ? "s" : ""} restant{30 - answeredCount > 1 ? "s" : ""} pour affiner ton profil →
+              <Text style={[s.profileContinue, { color: profile.accent + "77" }]}>
+                {30 - answeredCount} dilemme{30 - answeredCount > 1 ? "s" : ""} restant
+                {30 - answeredCount > 1 ? "s" : ""} pour affiner ton profil →
               </Text>
             )}
           </View>
         ) : null}
 
-        {/* Current level banner */}
+        {/* ── QUOTE CARD (next level's philosopher) ── */}
+        {currentLevel && <QuoteCard levelId={currentLevelId} />}
+
+        {/* ── CURRENT LEVEL BANNER ── */}
         {currentLevel && (
           <Pressable
             onPress={() => router.push("/game")}
             style={({ pressed }) => [
-              styles.currentBanner,
+              s.currentBanner,
               {
                 backgroundColor: colors.card,
                 borderColor: CATEGORY_COLORS[currentLevel.category],
@@ -186,59 +353,135 @@ export default function HomeScreen() {
               },
             ]}
           >
-            <View style={styles.bannerTop}>
-              <View style={styles.bannerLeft}>
-                <View style={[styles.catTag, { backgroundColor: CATEGORY_COLORS[currentLevel.category] + "20" }]}>
-                  <Text style={[styles.catTagText, { color: CATEGORY_COLORS[currentLevel.category] }]}>
+            <View style={s.bannerTop}>
+              <View style={s.bannerLeft}>
+                <View
+                  style={[
+                    s.catTag,
+                    { backgroundColor: CATEGORY_COLORS[currentLevel.category] + "20" },
+                  ]}
+                >
+                  <Text
+                    style={[s.catTagText, { color: CATEGORY_COLORS[currentLevel.category] }]}
+                  >
                     {CATEGORY_LABELS[currentLevel.category]}
                   </Text>
                 </View>
-                <Text style={[styles.bannerChapter, { color: colors.mutedForeground }]}>
-                  {currentChapter ? `Chapitre ${currentChapter.id} — ${currentChapter.title}` : ""}
+                <Text style={[s.bannerChapter, { color: colors.mutedForeground }]}>
+                  {currentChapter
+                    ? `Chapitre ${currentChapter.id} — ${currentChapter.title}`
+                    : ""}
                 </Text>
-                <Text style={[styles.bannerTitle, { color: colors.foreground }]}>
+                <Text style={[s.bannerTitle, { color: colors.foreground }]}>
                   Niveau {currentLevelId} — {currentLevel.title}
                 </Text>
               </View>
-              <View style={styles.mascotWrap}>
+              <View style={s.mascotWrap}>
                 <MascotCharacter state="idle" color={primaryColor} size={0.75} />
               </View>
             </View>
 
-            <View style={[styles.progressTrack, { backgroundColor: colors.secondary }]}>
-              <View style={[styles.progressFill, { backgroundColor: CATEGORY_COLORS[currentLevel.category], width: `${completionPct}%` }]} />
+            <View style={[s.progressTrack, { backgroundColor: colors.secondary }]}>
+              <View
+                style={[
+                  s.progressFill,
+                  {
+                    backgroundColor: CATEGORY_COLORS[currentLevel.category],
+                    width: `${completionPct}%`,
+                  },
+                ]}
+              />
             </View>
-            <Text style={[styles.progressLabel, { color: colors.mutedForeground }]}>
+            <Text style={[s.progressLabel, { color: colors.mutedForeground }]}>
               {completedLevels.length} / {LEVELS.length} niveaux · {completionPct}%
             </Text>
 
-            <View style={styles.playRow}>
-              <View style={[styles.playBtn, { backgroundColor: CATEGORY_COLORS[currentLevel.category] }]}>
+            <View style={s.playRow}>
+              <View
+                style={[s.playBtn, { backgroundColor: CATEGORY_COLORS[currentLevel.category] }]}
+              >
                 <Ionicons name="play" size={16} color="#fff" />
-                <Text style={styles.playBtnText}>Jouer</Text>
+                <Text style={s.playBtnText}>Jouer</Text>
               </View>
             </View>
           </Pressable>
         )}
 
-        {/* Chapters */}
+        {/* ── CHAPTER BADGES ── */}
+        <View style={[s.badgesCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[s.badgesTitle, { color: colors.mutedForeground }]}>
+            CHAPITRES COMPLÉTÉS
+          </Text>
+          <ChapterBadges
+            isCompleted={isChapterCompleted}
+            isStarted={isChapterStarted}
+          />
+        </View>
+
+        {/* ── CHAPTER LIST ── */}
         {CHAPTERS.map((chapter) => {
           const chapterDone = chapter.levels.filter((id) => isLevelCompleted(id)).length;
+          const chapterMeta = CHAPTER_META.find((c) => c.id === chapter.id);
+          const isCompleted = isChapterCompleted(chapter.id);
           const isUnlocked = isLevelUnlocked(chapter.levels[0]);
 
           return (
-            <View key={chapter.id} style={[styles.chapter, { borderColor: colors.border, backgroundColor: colors.card }]}>
-              <View style={styles.chapterHeader}>
-                <View>
-                  <Text style={[styles.chapterNum, { color: colors.mutedForeground }]}>CHAPITRE {chapter.id}</Text>
-                  <Text style={[styles.chapterTitle, { color: isUnlocked ? colors.foreground : colors.mutedForeground }]}>
-                    {chapter.title}
+            <View
+              key={chapter.id}
+              style={[
+                s.chapter,
+                {
+                  borderColor: isCompleted
+                    ? (chapterMeta?.color ?? colors.border) + "55"
+                    : colors.border,
+                  backgroundColor: colors.card,
+                },
+              ]}
+            >
+              <View style={s.chapterHeader}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                  <Text style={{ fontSize: 20, opacity: isUnlocked ? 1 : 0.4 }}>
+                    {chapterMeta?.emoji}
                   </Text>
+                  <View>
+                    <Text style={[s.chapterNum, { color: colors.mutedForeground }]}>
+                      CHAPITRE {chapter.id}
+                    </Text>
+                    <Text
+                      style={[
+                        s.chapterTitle,
+                        { color: isUnlocked ? colors.foreground : colors.mutedForeground },
+                      ]}
+                    >
+                      {chapter.title}
+                    </Text>
+                  </View>
                 </View>
-                <Text style={[styles.chapterProg, { color: colors.mutedForeground }]}>{chapterDone}/{chapter.levels.length}</Text>
+                <View style={{ alignItems: "flex-end", gap: 4 }}>
+                  <Text style={[s.chapterProg, { color: colors.mutedForeground }]}>
+                    {chapterDone}/{chapter.levels.length}
+                  </Text>
+                  {isCompleted && (
+                    <View
+                      style={[
+                        s.completedPill,
+                        { backgroundColor: (chapterMeta?.color ?? colors.border) + "22" },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          s.completedPillText,
+                          { color: chapterMeta?.color ?? colors.foreground },
+                        ]}
+                      >
+                        ✓ Terminé
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </View>
 
-              <View style={styles.levelList}>
+              <View style={s.levelList}>
                 {chapter.levels.map((levelId) => {
                   const lvl = LEVELS.find((l) => l.id === levelId);
                   if (!lvl) return null;
@@ -250,10 +493,13 @@ export default function HomeScreen() {
                   return (
                     <Pressable
                       key={levelId}
-                      onPress={() => unlocked && router.push({ pathname: "/game", params: { levelId: String(levelId) } })}
+                      onPress={() =>
+                        unlocked &&
+                        router.push({ pathname: "/game", params: { levelId: String(levelId) } })
+                      }
                       disabled={!unlocked}
                       style={({ pressed }) => [
-                        styles.levelRow,
+                        s.levelRow,
                         {
                           backgroundColor: isCurrent ? catColor + "10" : "transparent",
                           borderColor: isCurrent ? catColor + "44" : "transparent",
@@ -261,22 +507,44 @@ export default function HomeScreen() {
                         },
                       ]}
                     >
-                      <View style={[styles.levelIcon, { backgroundColor: done ? catColor + "20" : colors.secondary, borderColor: done ? catColor : colors.border }]}>
+                      <View
+                        style={[
+                          s.levelIcon,
+                          {
+                            backgroundColor: done ? catColor + "20" : colors.secondary,
+                            borderColor: done ? catColor : colors.border,
+                          },
+                        ]}
+                      >
                         <Ionicons
-                          name={done ? "checkmark" : unlocked ? "eye-outline" : "lock-closed-outline"}
+                          name={
+                            done
+                              ? "checkmark"
+                              : unlocked
+                              ? "eye-outline"
+                              : "lock-closed-outline"
+                          }
                           size={13}
                           color={done ? catColor : colors.mutedForeground}
                         />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.levelTitle, { color: unlocked ? colors.foreground : colors.mutedForeground }]}>
+                        <Text
+                          style={[
+                            s.levelTitle,
+                            { color: unlocked ? colors.foreground : colors.mutedForeground },
+                          ]}
+                        >
                           {lvl.title}
                         </Text>
-                        <Text style={[styles.levelMeta, { color: colors.mutedForeground }]}>
-                          {CATEGORY_LABELS[lvl.category]} · {lvl.psychology.known === "célèbre" ? "★ Classique" : "◆ Méconnu"}
+                        <Text style={[s.levelMeta, { color: colors.mutedForeground }]}>
+                          {CATEGORY_LABELS[lvl.category]} ·{" "}
+                          {lvl.psychology.known === "célèbre" ? "★ Classique" : "◆ Méconnu"}
                         </Text>
                       </View>
-                      {isCurrent && <View style={[styles.currentDot, { backgroundColor: catColor }]} />}
+                      {isCurrent && (
+                        <View style={[s.currentDot, { backgroundColor: catColor }]} />
+                      )}
                     </Pressable>
                   );
                 })}
@@ -289,10 +557,12 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingHorizontal: 20 },
   inner: { gap: 16 },
+
+  // Header
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   brandRow: { gap: 2 },
   brand: { fontSize: 36, fontFamily: "Inter_700Bold", letterSpacing: 4 },
@@ -335,12 +605,18 @@ const styles = StyleSheet.create({
   playBtn: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, paddingHorizontal: 18, paddingVertical: 10 },
   playBtnText: { color: "#fff", fontSize: 14, fontFamily: "Inter_600SemiBold" },
 
+  // Badges
+  badgesCard: { borderRadius: 16, borderWidth: 1, padding: 16, gap: 14 },
+  badgesTitle: { fontSize: 9, fontFamily: "Inter_700Bold", letterSpacing: 2 },
+
   // Chapters
   chapter: { borderRadius: 16, borderWidth: 1, overflow: "hidden" },
   chapterHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, paddingBottom: 10 },
   chapterNum: { fontSize: 9, fontFamily: "Inter_700Bold", letterSpacing: 2 },
   chapterTitle: { fontSize: 16, fontFamily: "Inter_700Bold", marginTop: 2 },
   chapterProg: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  completedPill: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  completedPillText: { fontSize: 10, fontFamily: "Inter_700Bold" },
   levelList: { gap: 2, paddingHorizontal: 10, paddingBottom: 10 },
   levelRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, borderWidth: 1 },
   levelIcon: { width: 28, height: 28, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center" },
